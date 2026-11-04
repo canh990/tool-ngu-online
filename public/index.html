@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Màn Hình Stream 9:16 - Ký Túc Xá Đi Ngủ Online</title>
+
+  <!-- Google Fonts: Outfit & Quicksand -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Quicksand:wght@500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            midnight: '#090d16',
+            nightcard: '#121727',
+            neonCyan: '#38bdf8',
+            neonPurple: '#a855f7',
+            royalGold: '#f59e0b',
+            emeraldGreen: '#10b981'
+          },
+          fontFamily: {
+            sans: ['Outfit', 'Quicksand', '"Segoe UI Emoji"', '"Apple Color Emoji"', '"Noto Color Emoji"', 'sans-serif'],
+            cozy: ['Quicksand', '"Segoe UI Emoji"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Socket.io CDN -->
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', 'Quicksand', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      image-rendering: -webkit-optimize-contrast;
+    }
+
+    /* Hiệu ứng text sắc nét cho OBS / TikTok Studio (Crisp Text) */
+    .crisp-text {
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Khung 9:16 Chuẩn Stream 540 x 960 (Tự động thích ứng sắc nét mọi độ phân giải 1080p / 2K) */
+    #streamStage {
+      width: 540px;
+      height: 960px;
+      position: relative;
+      background: radial-gradient(circle at 50% 12%, #181432 0%, #0c0f1d 45%, #070913 100%);
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transform-origin: center center;
+    }
+
+    #effectsCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 60;
+    }
+
+    /* Chuyển động thở của người đang ngủ */
+    @keyframes sleeperBreathe {
+
+      0%,
+      100% {
+        transform: translateY(0) scale(1);
+      }
+
+      50% {
+        transform: translateY(2px) scale(1.03);
+      }
+    }
+
+    .sleeper-breathing {
+      animation: sleeperBreathe 3.2s ease-in-out infinite;
+    }
+
+    /* Chữ Zzz bay lên */
+    @keyframes zzzFloat {
+      0% {
+        transform: translate(0, 0) scale(0.6);
+        opacity: 0;
+      }
+
+      30% {
+        opacity: 0.9;
+      }
+
+      80% {
+        opacity: 0.7;
+      }
+
+      100% {
+        transform: translate(12px, -22px) scale(1.15);
+        opacity: 0;
+      }
+    }
+
+    .zzz-bubble {
+      animation: zzzFloat 2.8s infinite ease-out;
+    }
+
+    /* Hào quang tím mộng mơ khi Chúc Ngủ Ngon */
+    @keyframes dreamyGlow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 15px rgba(168, 85, 247, 0.6), inset 0 0 10px rgba(168, 85, 247, 0.3);
+        border-color: #c084fc;
+      }
+
+      50% {
+        box-shadow: 0 0 25px rgba(168, 85, 247, 0.95), 0 0 40px rgba(245, 158, 11, 0.4), inset 0 0 16px rgba(192, 132, 252, 0.6);
+        border-color: #fef08a;
+      }
+    }
+
+    .bed-dreamy-aura {
+      animation: dreamyGlow 1.8s infinite ease-in-out !important;
+      border-color: #c084fc !important;
+    }
+
+    /* Cấp 3: Giường Hoàng Gia VIP Glow */
+    @keyframes vipGoldGlow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.5), inset 0 0 8px rgba(245, 158, 11, 0.2);
+        border-color: #fbbf24;
+      }
+
+      50% {
+        box-shadow: 0 0 22px rgba(245, 158, 11, 0.85), inset 0 0 14px rgba(251, 191, 36, 0.4);
+        border-color: #fef08a;
+      }
+    }
+
+    .bed-vip-glow {
+      animation: vipGoldGlow 2.4s infinite ease-in-out;
+      border-color: #fbbf24 !important;
+    }
+
+    /* Bong bóng chat tím ánh sao */
+    @keyframes popInBubble {
+      0% {
+        transform: translate(-50%, 8px) scale(0.3);
+        opacity: 0;
+      }
+
+      60% {
+        transform: translate(-50%, -4px) scale(1.1);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(-50%, 0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .dreamy-chat-bubble {
+      animation: popInBubble 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes starPulse {
+
+      0%,
+      100% {
+        opacity: 0.25;
+        transform: scale(0.85);
+      }
+
+      50% {
+        opacity: 0.85;
+        transform: scale(1.15);
+      }
+    }
+
+    .bg-star {
+      animation: starPulse 4s infinite ease-in-out;
+    }
+
+    @keyframes liveBlink {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(0.94);
+      }
+    }
+
+    .live-blinker {
+      animation: liveBlink 1.4s infinite ease-in-out;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(168, 85, 247, 0.4);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- KHUNG PHÁT SÓNG 9:16 (CHỈ CHỨA STREAM OVERLAY - KHÔNG CHỨA BẢNG ĐIỀU KHIỂN) -->
+  <div id="streamStage">
+
+    <!-- Lớp Canvas Hiệu Ứng (Mưa sao băng, trăng khuyết, mây trôi) -->
+    <canvas id="effectsCanvas"></canvas>
+
+    <!-- Sao nền tĩnh lấp lánh nhẹ -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden">
+      <div class="bg-star absolute top-10 left-12 text-yellow-200/40 text-xs">✨</div>
+      <div class="bg-star absolute top-28 right-16 text-purple-300/30 text-sm" style="animation-delay: 1.2s">✦</div>
+      <div class="bg-star absolute top-80 left-8 text-cyan-200/30 text-xs" style="animation-delay: 2.1s">★</div>
+      <div class="bg-star absolute top-96 right-10 text-yellow-100/30 text-xs" style="animation-delay: 0.8s">✨</div>
+      <div class="bg-star absolute bottom-64 left-14 text-purple-200/25 text-sm" style="animation-delay: 1.7s">✦</div>
+    </div>
+
+    <!-- BANNER THÔNG BÁO NỔI (#liveToastBanner) -->
+    <div id="liveToastBanner"
+      class="absolute top-2 left-4 right-4 z-50 transform -translate-y-20 opacity-0 transition-all duration-500 ease-out flex items-center gap-3 bg-gradient-to-r from-purple-900/95 via-indigo-900/95 to-slate-900/95 border-2 border-purple-400 rounded-xl px-4 py-2.5 shadow-2xl shadow-purple-500/50 backdrop-blur-md">
+      <div id="toastIcon" class="text-2xl text-yellow-300 filter drop-shadow">🌙</div>
+      <div class="flex-1">
+        <p id="toastTitle" class="text-xs font-black uppercase tracking-wider text-purple-200">SỰ KIỆN KÝ TÚC XÁ</p>
+        <p id="toastMessage" class="text-sm font-bold text-white crisp-text leading-tight">Chào mừng bạn đến với Ký Túc
+          Xá!</p>
+      </div>
+    </div>
+
+    <!-- 1. HEADER THÔNG TIN & TIẾN TRÌNH CỘNG ĐỒNG -->
+    <header
+      class="relative z-20 pt-3 px-3.5 pb-2 bg-gradient-to-b from-[#090b16]/95 via-[#0d1222]/85 to-transparent border-b border-purple-900/30">
+
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span
+            class="live-blinker bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md shadow-red-600/50">
+            <span class="w-1.5 h-1.5 rounded-full bg-white"></span> LIVE
+          </span>
+          <div>
+            <h1
+              class="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-purple-300 to-pink-300 crisp-text tracking-wide flex items-center gap-1">
+              🌙 KÝ TÚC XÁ ĐI NGỦ 💤
+            </h1>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div id="topVipBadge"
+            class="bg-gradient-to-r from-amber-950/80 to-yellow-900/80 border border-yellow-500/60 px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-sm">
+            <span class="text-xs">👑</span>
+            <span id="topVipName" class="text-[11px] font-bold text-yellow-300 max-w-[85px] truncate crisp-text">Chưa Có
+              VIP</span>
+          </div>
+          <div
+            class="bg-slate-900/90 border border-purple-500/50 px-2.5 py-0.5 rounded-md font-mono text-[11px] font-bold text-cyan-300 flex items-center gap-1.5 shadow-sm"
+            title="Thời lượng phát trực tiếp">
+            <span class="text-[10px] text-pink-400">⏱️</span>
+            <span id="realTimeClock">00:00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Thanh Mục Tiêu Cộng Đồng (25 Lời Chúc Ngủ Ngon) -->
+      <div class="bg-slate-950/70 border border-purple-500/30 rounded-xl p-2 shadow-inner">
+        <div class="flex justify-between items-center text-xs font-bold mb-1">
+          <div class="flex items-center gap-1.5 text-purple-200">
+            <span class="text-yellow-300 text-sm">🌙</span>
+            <span>Lời Chúc Ngủ Ngon Đêm Nay:</span>
+            <span id="goodnightGoalText" class="text-yellow-300 font-extrabold text-sm ml-0.5">0 / 25</span>
+          </div>
+          <div class="text-[11px] text-cyan-300 font-semibold flex items-center gap-1">
+            <span>Giường:</span>
+            <span id="occupiedBedsCount" class="text-white font-extrabold">0/20</span>
+          </div>
+        </div>
+        <div class="w-full bg-slate-900/90 rounded-full h-3 p-0.5 overflow-hidden border border-purple-900/50 relative">
+          <div id="goodnightProgressBar"
+            class="h-full bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-400 rounded-full transition-all duration-500 shadow-lg shadow-purple-500/50"
+            style="width: 0%"></div>
+          <div
+            class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse pointer-events-none">
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- BANNER CHÀO BẠN MỚI GHÉ THĂM (WELCOME NEW VIEWERS) -->
+    <div id="welcomeBannerSection"
+      class="relative z-10 mx-3 my-1 bg-gradient-to-r from-purple-950/90 via-slate-900/95 to-indigo-950/90 border border-purple-500/50 rounded-xl px-3 py-2 shadow-lg shadow-purple-950/60 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all duration-300 min-h-[48px]">
+      <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <div
+          class="relative w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 via-pink-500 to-amber-400 flex items-center justify-center text-sm shadow-md shadow-pink-500/40 shrink-0">
+          <span class="animate-bounce">👋</span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 mb-0.5">
+            <span
+              class="bg-gradient-to-r from-pink-500/30 to-purple-500/30 text-pink-300 border border-pink-400/50 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-pink-400 animate-ping"></span> CHÀO BẠN MỚI
+            </span>
+            <span class="text-[9px] text-purple-300/80 font-medium truncate">✨ Chúc bạn một đêm an lành!</span>
+          </div>
+          <div id="welcomeMessageContent"
+            class="text-[11px] font-extrabold text-white crisp-text truncate leading-tight transition-opacity duration-300">
+            Chào mừng bạn đến với Ký Túc Xá! Bình luận bất kỳ hoặc thả tim để nhận giường nhé 🛌
+          </div>
+        </div>
+      </div>
+
+      <!-- Thẻ người mới nhất vừa vào phòng -->
+      <div id="newViewerBadge"
+        class="hidden shrink-0 flex items-center gap-1.5 bg-slate-950/90 border border-pink-400/70 rounded-full pl-1.5 pr-2.5 py-0.5 shadow-md shadow-pink-900/40 animate-pulse">
+        <img id="newViewerAvatar" src="" class="w-6 h-6 rounded-full object-cover border border-purple-400/90">
+        <div class="flex flex-col">
+          <span class="text-[7px] text-pink-400 font-bold uppercase leading-none">Vừa vào</span>
+          <span id="newViewerName"
+            class="text-[10px] font-extrabold text-yellow-300 max-w-[70px] truncate leading-tight">Khách Mới</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. LƯỚI 20 GIƯỜNG NGỦ (4 CỘT x 5 HÀNG) -->
+    <main class="relative z-20 px-3 pt-6 pb-1 flex-1 flex flex-col justify-start">
+      <div id="bedsGrid" class="grid grid-cols-4 gap-2 w-full">
+        <!-- Render bằng JavaScript -->
+      </div>
+    </main>
+
+    <!-- 3. LIVE CHAT & NHẬT KÝ DIỄN BIẾN NÓNG (DƯỚI) -->
+    <footer
+      class="relative z-20 px-3 pb-3 pt-1 bg-gradient-to-t from-[#060810] via-[#090d18]/95 to-transparent border-t border-purple-900/30 flex flex-col gap-1.5">
+
+      <div class="grid grid-cols-12 gap-2 h-44">
+
+        <!-- Cột Trái (8/12): Live Chat Tốc Độ Cao -->
+        <div
+          class="col-span-8 flex flex-col bg-slate-950/70 border border-slate-800/80 rounded-xl p-2 overflow-hidden shadow-inner">
+          <div
+            class="flex items-center justify-between pb-1 mb-1 border-b border-slate-800 text-[11px] font-bold text-slate-300">
+            <span class="flex items-center gap-1"><i class="fa-solid fa-comments text-purple-400"></i> LIVE CHAT TƯƠNG
+              TÁC</span>
+            <span class="text-[10px] text-purple-300">🌙 Tự động nhận diện</span>
+          </div>
+
+          <div id="chatMessageList"
+            class="flex-1 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar text-xs flex flex-col justify-end">
+            <div class="text-[11px] text-slate-400 italic text-center py-1 bg-slate-900/50 rounded-lg">
+              💤 Chat <span class="text-yellow-300 font-bold">'ngủ ngon'</span> hoặc thả tim để nhận giường ngay!
+              💬 <span class="text-yellow-300 font-bold">Bình luận bất kỳ</span> hoặc thả tim để nhận giường ngay!
+            </div>
+          </div>
+        </div>
+
+        <!-- Cột Phải (4/12): Diễn Biến Nóng -->
+        <div
+          class="col-span-4 flex flex-col bg-slate-950/70 border border-slate-800/80 rounded-xl p-2 overflow-hidden shadow-inner">
+          <div class="pb-1 mb-1 border-b border-slate-800 text-[11px] font-bold text-amber-400 flex items-center gap-1">
+            <span class="text-xs">⚡</span> DIỄN BIẾN NÓNG
+          </div>
+
+          <div id="hotEventsList"
+            class="flex-1 overflow-y-auto space-y-1 pr-0.5 custom-scrollbar text-[10px] text-slate-300">
+            <div class="p-1 bg-slate-900/40 rounded border border-slate-800/50 text-slate-400">
+              ⏳ Phòng mở cửa đón 20 vị khách ngủ đêm.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="flex items-center justify-between text-[10px] text-slate-400 px-1 pt-0.5">
+        <div class="flex items-center gap-2">
+          <span class="flex items-center gap-1 text-cyan-400"><i class="fa-solid fa-heart text-red-500"></i> Tim: Lên
+            giường</span>
+          <span class="flex items-center gap-1 text-emerald-400"><i class="fa-solid fa-user-plus"></i> Follow: Đá Cấp
+            1</span>
+          <span class="flex items-center gap-1 text-amber-400"><i class="fa-solid fa-gift"></i> Quà: Đá VIP</span>
+        </div>
+        <div class="text-purple-300 font-semibold">
+          🌙 Chúc ngủ ngon: +20đ
+        </div>
+      </div>
+
+      <!-- Thanh Âm Nhạc Ru Ngủ Du Dương -->
+      <div class="flex items-center justify-between text-[10px] text-slate-300 px-1 pt-1 border-t border-purple-900/30">
+        <button onclick="toggleLullabyBGMUI()" id="btnLullabyBGM"
+          class="flex items-center gap-1.5 px-2.5 py-0.5 bg-purple-950/80 hover:bg-purple-900 border border-purple-500/50 rounded-lg text-purple-200 font-bold transition">
+          <i class="fa-solid fa-music text-yellow-300"></i> <span id="bgmStatusLabel">Nhạc Ru Ngủ: BẬT</span>
+        </button>
+        <div class="flex items-center gap-1.5">
+          <span class="text-slate-400 text-[9px]">Âm lượng:</span>
+          <input type="range" id="bgmVolumeSlider" min="0" max="100" value="25" oninput="changeBgmVolume(this.value)"
+            class="w-16 accent-purple-500 h-1 cursor-pointer">
+        </div>
+      </div>
+
+    </footer>
+
+  </div>
+
+  <!-- JAVASCRIPT OVERLAY ENGINE -->
+  <script>
+    const TOTAL_BEDS = 20;
+    const GOAL_TARGET = 25;
+    let goodnightCount = 0;
+    let isAudioEnabled = true;
+    let isTTSEnabled = true;
+    let isWelcomeVoiceEnabled = true;
+
+    const beds = [];
+    for (let i = 1; i <= TOTAL_BEDS; i++) {
+      beds.push({ id: i, occupied: false, user: null });
+    }
+
+    const AVATAR_SEEDS = [
+      'MeoCon', 'GauTruc', 'ThoNgoc', 'CuTi', 'BeBap', 'TraSua', 'MocMoc', 'SocNau',
+      'CunCon', 'HeoCon', 'ChuotTui', 'TieuHo', 'BeDau', 'BanhBao', 'KemDau', 'MayMay'
+    ];
+
+    const MOCK_NAMES = [
+      'Bé Mèo Mơ Màng', 'Gấu Bắc Cực', 'Minh Anh', 'Hoàng Tử Ngủ Gật',
+      'Thỏ Bảy Màu', 'Vịt Ngáo Ngơ', 'Cáo Tuyết', 'Hạt Dẻ Cười', 'Kem Dâu Tây',
+      'Bánh Bao Nóng', 'Sóc Nhí Nhảnh', 'Cún Tai Cụp', 'Mây Trắng', 'Tiểu Hổ',
+      'Cá Voi Xanh', 'Gấu Trúc Đáng Yêu', 'Bảo Bối Ký Túc', 'Bé Na Hay Ngủ'
+    ];
+
+    // ==========================================
+    // BỘ NHẠC RU NGỦ DU DƯƠNG (LULLABY BGM ENGINE)
+    // ==========================================
+    let audioCtx = null;
+    let bgmGainNode = null;
+    let bgmFilterNode = null;
+    let isBgmPlaying = false;
+    let bgmTimer = null;
+    let currentBgmVolume = 0.22;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioClass) audioCtx = new AudioClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    // Chuỗi hợp âm ru ngủ ngũ cung ấm áp (Cmaj9, Am9, Fmaj7, Gsus4)
+    const LULLABY_CHORDS = [
+      [261.63, 329.63, 392.00, 493.88], // C, E, G, B
+      [220.00, 261.63, 329.63, 392.00], // A, C, E, G
+      [174.61, 220.00, 261.63, 329.63], // F, A, C, E
+      [196.00, 261.63, 293.66, 392.00]  // G, C, D, G
+    ];
+    let chordIndex = 0;
+
+    function startLullabyBGM() {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      if (!bgmGainNode) {
+        bgmGainNode = ctx.createGain();
+        bgmFilterNode = ctx.createBiquadFilter();
+        bgmFilterNode.type = 'lowpass';
+        bgmFilterNode.frequency.value = 850; // Làm ấm âm thanh, lọc dải chói gắt
+        bgmGainNode.connect(bgmFilterNode);
+        bgmFilterNode.connect(ctx.destination);
+      }
+
+      bgmGainNode.gain.setValueAtTime(currentBgmVolume, ctx.currentTime);
+      isBgmPlaying = true;
+      playNextLullabyChord();
+
+      const btn = document.getElementById('btnLullabyBGM');
+      const label = document.getElementById('bgmStatusLabel');
+      if (btn) btn.className = 'flex items-center gap-1.5 px-2.5 py-0.5 bg-purple-950/90 hover:bg-purple-900 border border-purple-400 rounded-lg text-yellow-300 font-bold transition shadow-sm';
+      if (label) label.innerText = 'Nhạc Ru Ngủ: BẬT';
+    }
+
+    function stopLullabyBGM() {
+      isBgmPlaying = false;
+      if (bgmTimer) clearTimeout(bgmTimer);
+      if (bgmGainNode && audioCtx) {
+        bgmGainNode.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+      }
+      const btn = document.getElementById('btnLullabyBGM');
+      const label = document.getElementById('bgmStatusLabel');
+      if (btn) btn.className = 'flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-slate-400 font-bold transition';
+      if (label) label.innerText = 'Nhạc Ru Ngủ: TẮT';
+    }
+
+    function toggleLullabyBGMUI() {
+      if (isBgmPlaying) {
+        stopLullabyBGM();
+      } else {
+        startLullabyBGM();
+      }
+    }
+
+    function changeBgmVolume(val) {
+      currentBgmVolume = (val / 100) * 0.5; // Tối đa 50% để luôn êm ái
+      if (bgmGainNode && audioCtx && isBgmPlaying) {
+        bgmGainNode.gain.setValueAtTime(currentBgmVolume, audioCtx.currentTime);
+      }
+    }
+
+    function playNextLullabyChord() {
+      if (!isBgmPlaying) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+      const chord = LULLABY_CHORDS[chordIndex % LULLABY_CHORDS.length];
+      chordIndex++;
+
+      // Đánh rải nốt nhẹ nhàng như tiếng đàn piano ru ngủ
+      chord.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const noteGain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.45);
+
+        noteGain.gain.setValueAtTime(0.0001, now + idx * 0.45);
+        noteGain.gain.exponentialRampToValueAtTime(0.24, now + idx * 0.45 + 0.08);
+        noteGain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.45 + 2.8);
+
+        osc.connect(noteGain);
+        noteGain.connect(bgmGainNode);
+
+        osc.start(now + idx * 0.45);
+        osc.stop(now + idx * 0.45 + 3.0);
+      });
+
+      bgmTimer = setTimeout(() => {
+        if (isBgmPlaying) playNextLullabyChord();
+      }, 3400);
+    }
+
+    // Audio Ducking: Giảm nhỏ nhạc nền khi Giọng đọc AI nói
+    function duckBGM() {
+      if (bgmGainNode && audioCtx && isBgmPlaying) {
+        bgmGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+        bgmGainNode.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.3);
+      }
+    }
+
+    function unduckBGM() {
+      if (bgmGainNode && audioCtx && isBgmPlaying) {
+        bgmGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+        bgmGainNode.gain.linearRampToValueAtTime(currentBgmVolume, audioCtx.currentTime + 0.8);
+      }
+    }
+
+    // Chuông ru ngủ 3 nốt
+    function playLullabyChime() {
+      if (!isAudioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.18);
+          gain.gain.setValueAtTime(0.0001, now + idx * 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.18 + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.18 + 1.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.18);
+          osc.stop(now + idx * 0.18 + 1.3);
+        });
+      } catch (e) { }
+    }
+
+    function playBedKickSound() {
+      if (!isAudioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.26);
+      } catch (e) { }
+    }
+
+    function playMeteorShowerMusic() {
+      if (!isAudioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.22, now + idx * 0.12 + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.12 + 1.8);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.12);
+          osc.stop(now + idx * 0.12 + 1.9);
+        });
+      } catch (e) { }
+    }
+
+    // ==========================================
+    // GIỌNG ĐỌC AI ẤM ÁP, THÌ THẦM RU NGỦ
+    // ==========================================
+    const VN_SYLLABLES = [
+      'nguyen', 'tran', 'le', 'pham', 'hoang', 'huynh', 'phan', 'vu', 'vo', 'dang', 'bui', 'do', 'ho', 'ngo', 'duong', 'ly', 'dinh', 'dao', 'doan',
+      'van', 'thi', 'canh', 'dat', 'nam', 'linh', 'huong', 'thao', 'duc', 'anh', 'tuan', 'long', 'minh', 'quan', 'huy', 'ha', 'nga', 'trang', 'phuong',
+      'hoa', 'mai', 'yen', 'hang', 'loan', 'thanh', 'huyen', 'quynh', 'giang', 'phuc', 'khoa', 'tri', 'kien', 'son', 'thang', 'tien', 'hai', 'hieu',
+      'hung', 'viet', 'dung', 'trung', 'bao', 'phong', 'khang', 'an', 'khanh', 'tam', 'thuy', 'tram', 'ngoc', 'diep', 'chau', 'vy', 'nhi', 'nhu', 'my',
+      'quoc', 'gia', 'trong', 'tu', 'ngan', 'bich', 'quyen', 'thanh', 'tien', 'khoi', 'bac', 'dong', 'tay'
+    ].sort((a, b) => b.length - a.length);
+
+    function splitVietnameseName(str) {
+      let s = str.toLowerCase();
+      let result = [];
+      let pos = 0;
+      while (pos < s.length) {
+        let matched = false;
+        for (const syl of VN_SYLLABLES) {
+          if (s.startsWith(syl, pos)) {
+            result.push(s.slice(pos, pos + syl.length));
+            pos += syl.length;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          result.push(s.slice(pos));
+          break;
+        }
+      }
+      return result.length > 1 ? result.join(' ') : str;
+    }
+
+    function formatNameForSpeech(rawName) {
+      if (!rawName || typeof rawName !== 'string') return 'Bạn xem';
+      let name = rawName.trim().normalize('NFC');
+      if (!name || name === 'undefined' || name === 'null' || name === '[object Object]') return 'Bạn xem';
+
+      // 1. Dạng user mặc định: user12345678 -> bạn xem
+      if (/^user\d{3,}$/i.test(name)) return 'bạn xem';
+
+      // 2. Tách camelCase (ví dụ: NguyenVanCanh -> Nguyen Van Canh)
+      name = name.replace(/([a-zđ])([A-ZĐ])/g, '$1 $2');
+
+      // 3. Thay thế ký tự ngăn cách bằng khoảng trắng
+      name = name.replace(/[._\-+@~#%&*\/\ \|]/g, ' ');
+
+      // 4. Bỏ các ký tự đặc biệt, icon, emoji, CJK và chữ số
+      name = name.replace(/[^\p{Script=Latin}\s]/gu, ' ');
+
+      // 5. Nếu là từ viết liền dài >= 6 ký tự không có dấu cách -> Tách âm tiết tiếng Việt
+      name = name.replace(/\s+/g, ' ').trim();
+      if (name && !name.includes(' ') && name.length >= 6) {
+        name = splitVietnameseName(name);
+      }
+
+      // 6. Xóa khoảng trắng thừa và chuẩn hóa
+      name = name.replace(/\s+/g, ' ').trim();
+      if (!name || name.length < 2) return 'bạn xem';
+
+      // Lấy tối đa 4 từ để đọc tự nhiên
+      const words = name.split(' ');
+      if (words.length > 4) name = words.slice(0, 4).join(' ');
+
+      return name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+
+    const WARM_LULLABY_TEMPLATES = [
+      "Cảm ơn bạn {name} thật nhiều nhé. Lời chúc {wish} ấm áp quá. Chúc cả phòng mình cùng đắp chăn ấm và ngủ thật ngon nha!",
+      "Cảm ơn {name} đáng yêu đã chúc: {wish}. Cả ký túc xá cùng chúc {name} ngủ say và mơ giấc mơ ngọt ngào nhé!",
+      "Lời chúc của {name} dịu dàng quá: {wish}. Chúc bạn có một giấc ngủ thật ngon và một đêm an lành nha!",
+      "Cảm ơn {name} đã gửi lời chúc ấm áp: {wish}. Chúc cả phòng ngủ ngon và có những giấc mơ thật đẹp nhé!"
+    ];
+
+    function generateWarmWishSpeech(name, rawWish) {
+      const spokenName = formatNameForSpeech(name);
+      let cleanWish = (rawWish || 'chúc cả phòng ngủ ngon').replace(/[🌙✨💤⭐❤️👑👋🔥⚡\n\r]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (cleanWish.length > 60) cleanWish = cleanWish.substring(0, 60);
+      const tpl = WARM_LULLABY_TEMPLATES[Math.floor(Math.random() * WARM_LULLABY_TEMPLATES.length)];
+      return tpl.replace(/{name}/g, spokenName).replace('{wish}', `"${cleanWish}"`);
+    }
+
+    // ==========================================
+    // HỆ THỐNG ƯU TIÊN GIỌNG ĐỌC AI (PRIORITY TTS QUEUE)
+    // 1. PRIORITY_GOAL: Mưa sao băng / Đạt 25 lời chúc (Cao nhất, ngắt ngay câu thường)
+    // 2. PRIORITY_GIFT: Tặng hoa hồng, Quà VIP donate (Ngắt ngay câu thường)
+    // 3. PRIORITY_WISH: Lời chúc ngủ ngon ấm áp (Ngắt ngay câu chào mới / thả tim)
+    // 4. PRIORITY_NORMAL: Follow, Chia sẻ Live (Hàng đợi tối đa 1 câu)
+    // 5. PRIORITY_LOW: Chào người mới vào phòng, Cảm ơn thả tim (Tự động bỏ qua nếu đang có Quà/Chúc/Goal)
+    // ==========================================
+    const PRIORITY_GOAL = 1;
+    const PRIORITY_GIFT = 2;
+    const PRIORITY_WISH = 3;
+    const PRIORITY_NORMAL = 4;
+    const PRIORITY_LOW = 5;
+
+    let ttsQueue = [];
+    let isSpeaking = false;
+    let currentSpeechPriority = 999;
+    let ttsSpeechCounter = 0;
+    let ttsAudioPlayer = null;
+
+    function stopCurrentTTSAudio() {
+      if (ttsAudioPlayer) {
+        ttsAudioPlayer.onended = null;
+        ttsAudioPlayer.onerror = null;
+        try {
+          ttsAudioPlayer.pause();
+          ttsAudioPlayer.src = '';
+        } catch (e) {}
+        ttsAudioPlayer = null;
+      }
+      isSpeaking = false;
+      currentSpeechPriority = 999;
+    }
+
+    function speakTTS(text, priority = PRIORITY_NORMAL) {
+      if (!isTTSEnabled || !text) return;
+
+      const p = Number(priority) || PRIORITY_NORMAL;
+      const cleanText = String(text).trim();
+      if (!cleanText) return;
+
+      // 1. Nếu là sự kiện Ưu Tiên Thấp (Chào người mới / Thả tim):
+      // Bỏ qua nếu đang đọc hoặc trong hàng đợi đang có sự kiện ưu tiên cao (Goal, Quà, Lời chúc)
+      if (p >= PRIORITY_LOW) {
+        if (isSpeaking && currentSpeechPriority <= PRIORITY_WISH) return;
+        if (ttsQueue.some(q => q.priority <= PRIORITY_WISH)) return;
+      }
+
+      // 2. Nếu là sự kiện thường (Follow, Share):
+      // Bỏ câu follow/share cũ đang chờ nếu có câu mới tới
+      if (p === PRIORITY_NORMAL) {
+        const idx = ttsQueue.findIndex(q => q.priority === PRIORITY_NORMAL);
+        if (idx !== -1) ttsQueue.splice(idx, 1);
+      }
+
+      // 3. Ngắt ngay lập tức câu chào thường / thả tim nếu có sự kiện ưu tiên cao tới:
+      // - Goal (1) & Quà (2): Ngắt bất kỳ câu thường nào (Priority >= 4)
+      // - Lời chúc (3): Ngắt câu chào mới hoặc thả tim (Priority >= 5)
+      if (isSpeaking) {
+        if (p <= PRIORITY_GIFT && currentSpeechPriority >= PRIORITY_NORMAL) {
+          stopCurrentTTSAudio();
+        } else if (p <= PRIORITY_WISH && currentSpeechPriority >= PRIORITY_LOW) {
+          stopCurrentTTSAudio();
+        }
+      }
+
+      ttsQueue.push({
+        id: ++ttsSpeechCounter,
+        text: cleanText,
+        priority: p,
+        createdAt: Date.now()
+      });
+
+      // Sắp xếp hàng đợi theo mức ưu tiên (1 -> 2 -> 3 -> 4 -> 5), cùng ưu tiên thì theo thứ tự thời gian (FIFO)
+      ttsQueue.sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return a.createdAt - b.createdAt;
+      });
+
+      // Dọn dẹp hàng đợi:
+      // Các mục Goal (1), Quà (2), Lời chúc (3) KHÔNG BAO GIỜ BỊ XÓA (giữ tối đa 6 câu chúc nếu dồn dập).
+      // Các mục thường (4, 5) chỉ giữ tối đa 1 câu mới nhất.
+      const highPriority = ttsQueue.filter(q => q.priority <= PRIORITY_WISH);
+      if (highPriority.length > 6) {
+        const excess = highPriority.length - 6;
+        for (let i = 0; i < excess; i++) {
+          const idx = ttsQueue.findIndex(q => q.priority === PRIORITY_WISH);
+          if (idx !== -1) ttsQueue.splice(idx, 1);
+        }
+      }
+      const lowPriority = ttsQueue.filter(q => q.priority >= PRIORITY_NORMAL);
+      if (lowPriority.length > 1) {
+        const excessLow = lowPriority.length - 1;
+        for (let i = 0; i < excessLow; i++) {
+          const idx = ttsQueue.findIndex(q => q.priority >= PRIORITY_NORMAL);
+          if (idx !== -1) ttsQueue.splice(idx, 1);
+        }
+      }
+
+      processTTSQueue();
+    }
+
+    // Giọng đọc AI chào người xem mới vào phòng (có cooldown 6s chống spam giọng)
+    let lastWelcomeVoiceTime = 0;
+    const WELCOME_VOICE_TEMPLATES = [
+      "Chào mừng bạn {name} đã ghé phòng ký túc xá nhé!",
+      "Ký túc xá chào bạn {name} nha, chúc bạn một đêm ngủ thật ngon!",
+      "Chào mừng {name} ghé phòng, thả tim hoặc chat ngủ ngon để nhận giường nhé!",
+      "Chào mừng {name} ghé phòng, bình luận bất kỳ hoặc thả tim để nhận giường nhé!",
+      "Chào bạn {name} ghé thăm phòng live nhé, chúc bạn ngủ ngon!"
+    ];
+
+    function speakWelcomeViewer(rawName) {
+      if (!isTTSEnabled || !isWelcomeVoiceEnabled) return;
+      const now = Date.now();
+      if (now - lastWelcomeVoiceTime < 6000) return; // Cooldown 6s tránh đè giọng khi nhiều người vào
+      lastWelcomeVoiceTime = now;
+
+      const spokenName = formatNameForSpeech(rawName);
+      const tpl = WELCOME_VOICE_TEMPLATES[Math.floor(Math.random() * WELCOME_VOICE_TEMPLATES.length)];
+      const text = tpl.replace('{name}', spokenName);
+      speakTTS(text, PRIORITY_LOW);
+    }
+
+    function processTTSQueue() {
+      if (isSpeaking || ttsQueue.length === 0) return;
+      const item = ttsQueue.shift();
+      if (!item || !item.text) return;
+
+      isSpeaking = true;
+      currentSpeechPriority = item.priority;
+
+      // Giảm nhỏ nhạc nền để tiếng nói ấm áp nổi bật
+      duckBGM();
+
+      // Dọn sạch audio cũ để tạo audio mới độc lập, không bị xung đột promise
+      if (ttsAudioPlayer) {
+        ttsAudioPlayer.onended = null;
+        ttsAudioPlayer.onerror = null;
+        try { ttsAudioPlayer.pause(); } catch (e) {}
+        ttsAudioPlayer = null;
+      }
+
+      let isFinished = false;
+      const finishSpeech = () => {
+        if (isFinished) return;
+        isFinished = true;
+        unduckBGM();
+        if (ttsAudioPlayer) {
+          ttsAudioPlayer.onended = null;
+          ttsAudioPlayer.onerror = null;
+          ttsAudioPlayer = null;
+        }
+        isSpeaking = false;
+        currentSpeechPriority = 999;
+        setTimeout(processTTSQueue, 250);
+      };
+
+      try {
+        const audioUrl = window.location.protocol.startsWith('http')
+          ? `/api/tts?text=${encodeURIComponent(item.text)}`
+          : `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(item.text)}`;
+
+        ttsAudioPlayer = new Audio();
+        ttsAudioPlayer.src = audioUrl;
+        ttsAudioPlayer.onended = finishSpeech;
+        ttsAudioPlayer.onerror = (err) => {
+          console.warn('TTS Audio playback note:', err);
+          finishSpeech();
+        };
+
+        const playPromise = ttsAudioPlayer.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
+            console.warn('TTS Audio play rejected:', err?.message || err);
+            finishSpeech();
+          });
+        }
+      } catch (e) {
+        finishSpeech();
+      }
+    }
+
+    // ==========================================
+    // RENDER LƯỚI 20 GIƯỜNG
+    // ==========================================
+    function renderBeds() {
+      const grid = document.getElementById('bedsGrid');
+      if (!grid) return;
+
+      let html = '';
+      beds.forEach(bed => {
+        if (!bed.occupied || !bed.user) {
+          html += `
+            <div id="bedCard_${bed.id}" class="relative bg-nightcard/60 border border-dashed border-slate-700/60 rounded-xl p-1.5 flex flex-col items-center justify-between h-[94px] transition-all duration-300">
+              <div class="w-full flex justify-between items-center text-[9px] font-bold text-slate-500">
+                <span class="bg-slate-900/80 px-1.5 py-0.5 rounded">#${bed.id}</span>
+                <span class="text-slate-600">Trống</span>
+              </div>
+              <div class="relative w-12 h-9 bg-slate-900/50 rounded-lg border border-slate-800 flex items-center justify-center">
+                <div class="w-7 h-3 bg-slate-700/40 rounded-sm"></div>
+                <div class="absolute bottom-0 w-full h-4 bg-slate-800/40 rounded-b-lg border-t border-slate-700/50"></div>
+              </div>
+              <span class="text-[9px] text-purple-300 font-bold truncate w-full text-center">Bình luận để nhận</span>
+            </div>
+          `;
+        } else {
+          const u = bed.user;
+          const uName = (u.name && u.name !== 'undefined' && u.name !== 'null') ? u.name : (u.nickname || 'Bạn Ngủ');
+          const uAvatar = (u.avatar && u.avatar !== 'undefined' && u.avatar !== 'null') ? u.avatar : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uName)}`;
+
+          let borderClass = 'border-cyan-500/60';
+          let blanketClass = 'bg-slate-700 border-cyan-500/70';
+          let badgeHtml = `<span class="bg-cyan-950 text-cyan-300 border border-cyan-800 px-1 rounded text-[8px] font-black">CẤP 1</span>`;
+
+          if (u.tier === 2) {
+            borderClass = 'border-emerald-500 shadow-md shadow-emerald-500/20';
+            blanketClass = 'bg-emerald-900/90 border-emerald-400';
+            badgeHtml = `<span class="bg-emerald-950 text-emerald-300 border border-emerald-600 px-1 rounded text-[8px] font-black">⭐ FAN</span>`;
+          } else if (u.tier === 3) {
+            borderClass = 'bed-vip-glow';
+            blanketClass = 'bg-gradient-to-t from-amber-900 via-amber-800 to-yellow-600 border-yellow-300';
+            badgeHtml = `<span class="bg-yellow-950 text-yellow-300 border border-yellow-500 px-1 rounded text-[8px] font-black flex items-center gap-0.5">👑 ${u.coins || 10}XU</span>`;
+          }
+
+          const isDreamy = u.hasDreamyAura && Date.now() < u.auraExpiry;
+          if (isDreamy) borderClass += ' bed-dreamy-aura';
+
+          html += `
+            <div id="bedCard_${bed.id}" class="relative bg-nightcard/90 border ${borderClass} rounded-xl p-1.5 flex flex-col items-center justify-between h-[94px] transition-all duration-300">
+              <div class="w-full flex justify-between items-center text-[9px] font-bold">
+                <span class="bg-slate-900/90 text-slate-300 px-1.5 py-0.5 rounded border border-slate-800">#${bed.id}</span>
+                ${badgeHtml}
+              </div>
+              <div class="relative w-12 h-9 bg-slate-950/80 rounded-lg border border-slate-800/80 flex items-center justify-center overflow-visible">
+                <div class="absolute top-1 w-8 h-3.5 bg-slate-200/90 rounded-sm shadow-sm"></div>
+                <div class="sleeper-breathing relative z-10 w-7 h-7 rounded-full overflow-hidden border border-purple-400/80 shadow mt-[-2px]">
+                  <img src="${uAvatar}" alt="${uName}" class="w-full h-full object-cover">
+                </div>
+                <div class="zzz-bubble absolute -top-3 -right-2 text-[10px] font-black text-purple-300 pointer-events-none z-20">Zzz</div>
+                <div class="absolute bottom-0 w-full h-4 ${blanketClass} rounded-b-lg border-t z-10 flex items-center justify-center">
+                  ${isDreamy ? '<span class="text-[8px] text-yellow-200 animate-pulse">✨</span>' : ''}
+                </div>
+              </div>
+              <div class="w-full flex items-center justify-between text-[9px] font-bold px-0.5">
+                <span class="text-white truncate max-w-[55px] crisp-text">${uName}</span>
+                <span class="text-yellow-400 font-mono font-extrabold flex items-center gap-0.5"><i class="fa-solid fa-star text-[7px]"></i>${u.points || 0}</span>
+              </div>
+              <div id="bubble_bed_${bed.id}" class="hidden dreamy-chat-bubble absolute -top-8 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-purple-950 via-purple-900 to-indigo-950 border-2 border-purple-400 rounded-lg px-2 py-0.5 shadow-2xl shadow-purple-600/80 whitespace-nowrap text-[10px] font-extrabold text-white crisp-text flex items-center gap-1 pointer-events-none">
+                <span class="bubble-icon text-yellow-300">🌙</span>
+                <span class="bubble-text truncate max-w-[120px]">Ngủ ngon nhé!</span>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      grid.innerHTML = html;
+      updateHeaderStats();
+    }
+
+    function updateHeaderStats() {
+      const occupied = beds.filter(b => b.occupied).length;
+      const countEl = document.getElementById('occupiedBedsCount');
+      if (countEl) countEl.innerText = `${occupied}/20`;
+
+      let topVip = null;
+      beds.forEach(b => {
+        if (b.occupied && b.user) {
+          if (!topVip || b.user.tier > topVip.tier || (b.user.coins || 0) > (topVip.coins || 0)) {
+            topVip = b.user;
+          }
+        }
+      });
+      const topNameEl = document.getElementById('topVipName');
+      const safeTopName = (topVip && topVip.name && topVip.name !== 'undefined' && topVip.name !== 'null') ? topVip.name : 'Chưa Có VIP';
+      if (topNameEl) topNameEl.innerText = safeTopName;
+    }
+
+    // ==========================================
+    // PHÂN CẤP CHIẾM GIƯỜNG & CHÚC NGỦ NGON
+    // ==========================================
+    function normalizeUser(raw) {
+      if (!raw) return null;
+      let rawId = raw.id || raw.uniqueId || raw.userId;
+      if (rawId === 'undefined' || rawId === 'null') rawId = '';
+      const id = String(rawId || ('u_' + Date.now()));
+
+      let rawName = raw.name || raw.nickname || raw.uniqueId;
+      if (rawName === 'undefined' || rawName === 'null') rawName = '';
+      const name = String(rawName || 'Khách Xem');
+
+      let rawAvatar = raw.avatar || raw.profilePictureUrl;
+      if (rawAvatar === 'undefined' || rawAvatar === 'null') rawAvatar = '';
+      const avatar = rawAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`;
+
+      return { id, name, avatar };
+    }
+
+    function findUserBed(userId) {
+      if (!userId) return null;
+      const targetId = String(userId);
+      return beds.find(b => b.occupied && b.user && String(b.user.id) === targetId);
+    }
+
+    function findFirstEmptyBed() { return beds.find(b => !b.occupied); }
+
+    function assignBed(rawUser, targetTier, initialPoints = 20, coins = 0) {
+      const userData = normalizeUser(rawUser);
+      if (!userData) return { success: false };
+
+      // 1. Đã có giường -> Cộng điểm sao, giữ nguyên giường
+      let userBed = findUserBed(userData.id);
+      if (userBed) {
+        if (targetTier > userBed.user.tier) userBed.user.tier = targetTier;
+        userBed.user.points += initialPoints;
+        if (coins > 0) userBed.user.coins = (userBed.user.coins || 0) + coins;
+        renderBeds();
+        return { success: true, bedId: userBed.id, type: 'on_bed' };
+      }
+
+      // 2. Chưa có giường và còn giường trống -> Lên giường trống
+      let emptyBed = findFirstEmptyBed();
+      if (emptyBed) {
+        emptyBed.occupied = true;
+        emptyBed.user = {
+          id: userData.id, name: userData.name, avatar: userData.avatar,
+          tier: targetTier, points: initialPoints, coins: coins,
+          hasDreamyAura: false, auraExpiry: 0
+        };
+        renderBeds();
+        return { success: true, bedId: emptyBed.id, type: 'new_bed' };
+      }
+
+      // 3. ĐÃ KÍN 20 GIƯỜNG: TÍNH ĐIỂM AI ÍT SAO HƠN THÌ BỊ ĐÁ
+      let lowestBed = null;
+      let minStars = Infinity;
+      beds.forEach(b => {
+        if (b.occupied && b.user) {
+          const p = b.user.points || 0;
+          if (p < minStars) {
+            minStars = p;
+            lowestBed = b;
+          }
+        }
+      });
+
+      // Nếu người mới có nhiều sao hơn người ít sao nhất: Người ít sao hơn bị đá thế chỗ
+      if (lowestBed && initialPoints > minStars) {
+        const kicked = lowestBed.user;
+        lowestBed.user = {
+          id: userData.id, name: userData.name, avatar: userData.avatar,
+          tier: targetTier, points: initialPoints, coins: coins,
+          hasDreamyAura: false, auraExpiry: 0
+        };
+        playBedKickSound();
+        logHotEvent(`⚡ <b>${userData.name}</b> (${initialPoints}⭐) nhiều sao hơn đã <span class="text-amber-400 font-bold">THẾ CHỖ</span> ${kicked.name} (${minStars}⭐ ít sao nhất) tại Giường #${lowestBed.id}!`);
+        showToast(`⚡ ${userData.name} (${initialPoints}⭐) đã thế chỗ ${kicked.name} (${minStars}⭐) nhận Giường #${lowestBed.id}!`, '⚡', 'THẾ CHỖ ĐIỂM CAO');
+        renderBeds();
+        return { success: true, bedId: lowestBed.id, kickedUser: kicked, minStars, type: 'kicked_bed' };
+      }
+
+      // Nếu người mới không đủ sao để thế chỗ: Giữ nguyên 20 giường
+      return { success: false, full: true, minStars };
+    }
+
+    // ==========================================
+    // CHUYỂN MÃ ICON TIKTOK ([laugh], [heart]...) THÀNH EMOJI
+    // TikTok gửi icon cảm xúc dưới dạng mã chữ trong ngoặc vuông
+    // ==========================================
+    const TIKTOK_EMOTE_MAP = {
+      smile: '😊', happy: '😁', angry: '😡', cry: '😭', embarrassed: '😳', surprised: '😮',
+      wronged: '🥺', shout: '😤', flushed: '😳', yummy: '😋', complacent: '😌', drool: '🤤',
+      scream: '😱', weep: '😢', speechless: '😶', funnyface: '🤪', laughwithtears: '😂',
+      laughcry: '😂', wicked: '😈', facewithrollingeyes: '🙄', sulk: '😒', thinking: '🤔',
+      lovely: '🥰', greedy: '🤑', wow: '😲', joyful: '😆', hehe: '😄', slap: '👋', tears: '😿',
+      stun: '😵', cute: '🥹', blink: '😉', disdain: '😏', astonish: '😯', rage: '🤬', cool: '😎',
+      excited: '🤩', proud: '😤', smileface: '🙂', evil: '👿', angel: '😇', laugh: '😆',
+      pride: '😌', nap: '😴', sleep: '😴', loveface: '😍', love: '😍', awkward: '😅', shock: '😨',
+      heart: '❤️', thanks: '🙏', thank: '🙏', rose: '🌹', like: '👍', ok: '👌', clap: '👏',
+      kiss: '😘', gift: '🎁', fire: '🔥', star: '⭐', sad: '😢', shy: '☺️', hug: '🤗',
+      bye: '👋', hi: '👋', hello: '👋', yes: '👍', no: '🙅', party: '🥳', sweat: '😓',
+      dizzy: '😵‍💫', sleepy: '😪', yawn: '🥱', confused: '😕', bigsmile: '😃', grin: '😁'
+    };
+
+    function lookupTikTokEmote(code) {
+      let key = String(code).toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (TIKTOK_EMOTE_MAP[key]) return TIKTOK_EMOTE_MAP[key];
+      // Bỏ tiền tố bộ sticker (vd: rosieawkward -> awkward)
+      const prefixes = ['rosie', 'rosa', 'tiktok', 'tt', 'live'];
+      for (const p of prefixes) {
+        if (key.startsWith(p) && TIKTOK_EMOTE_MAP[key.slice(p.length)]) return TIKTOK_EMOTE_MAP[key.slice(p.length)];
+      }
+      // Tìm mã con nằm trong chuỗi (vd: bigheart -> heart)
+      const found = Object.keys(TIKTOK_EMOTE_MAP).sort((a, b) => b.length - a.length).find(k => k.length >= 3 && key.includes(k));
+      return found ? TIKTOK_EMOTE_MAP[found] : '😊';
+    }
+
+    function convertTikTokEmotes(text) {
+      if (!text) return text;
+      return String(text).replace(/\[([a-zA-Z0-9_]{1,30})\]/g, (_, code) => lookupTikTokEmote(code));
+    }
+
+    function stripTikTokEmotes(text) {
+      if (!text) return text;
+      return String(text).replace(/\[([a-zA-Z0-9_]{1,30})\]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    const GOODNIGHT_KEYWORDS = ['ngủ ngon', 'ngu ngon', 'chúc ngủ ngon', 'good night', 'goodnight', 'gn', 'g9', 'mơ đẹp', 'mo dep', 'ngủ sớm', 'khò khò', 'buồn ngủ', 'buon ngu', 'đi ngủ', 'di ngu', 'ngủ thôi', 'ngu thoi', 'ngủ đi', 'ngu di', 'ngủ', 'ngu'];
+    function checkGoodnightKeyword(msg) {
+      if (!msg) return false;
+      const lower = msg.toLowerCase().trim();
+      return GOODNIGHT_KEYWORDS.some(kw => {
+        if (kw === 'ngủ' || kw === 'ngu' || kw === 'gn' || kw === 'g9') {
+          return new RegExp(`(^|\\s|[.,!?;~])${kw}($|\\s|[.,!?;~])`, 'i').test(lower);
+        }
+        return lower.includes(kw);
+      });
+    }
+
+    function triggerGoodnightEvent(rawUser, messageText) {
+      const userData = normalizeUser(rawUser);
+      if (!userData) return;
+
+      goodnightCount++;
+      updateGoodnightProgressBar();
+
+      let userBed = findUserBed(userData.id);
+      let targetBedId = null;
+
+      if (userBed) {
+        userBed.user.points += 20;
+        userBed.user.hasDreamyAura = true;
+        userBed.user.auraExpiry = Date.now() + 60000;
+        targetBedId = userBed.id;
+        logHotEvent(`🌙 <b>${userData.name}</b> chúc ngủ ngon: +20⭐ Giường #${userBed.id}!`);
+      } else {
+        const wishPoints = 35;
+        const res = assignBed(userData, 1, wishPoints);
+        if (res.success) {
+          targetBedId = res.bedId;
+          const assigned = beds.find(b => b.id === targetBedId);
+          if (assigned && assigned.user) {
+            assigned.user.hasDreamyAura = true;
+            assigned.user.auraExpiry = Date.now() + 60000;
+          }
+          if (res.type !== 'kicked_bed') {
+            showToast(`🌙 ${userData.name} gửi lời chúc ngủ ngon và nhận Giường #${targetBedId}!`, '🌙', 'CHÚC NGỦ NGON');
+            logHotEvent(`🌙 <b>${userData.name}</b> chúc ngủ ngon -> nhận Giường #${targetBedId}!`);
+          }
+        } else {
+          showToast(`🌙 ${userData.name} chúc ngủ ngon! (Phòng đã kín 20 giường)`, '🌙', 'CHÚC NGỦ NGON');
+        }
+      }
+
+      const displayText = convertTikTokEmotes(messageText);
+      addChatMessage({ user: userData, comment: displayText, isGoodnight: true, bedId: targetBedId });
+      renderBeds();
+      spawnFloatingNightParticles();
+
+      if (targetBedId) showDreamyBubble(targetBedId, displayText);
+
+      // Đọc lời chúc của user bằng giọng nói ấm áp thì thầm (bỏ mã icon [xxx] để không đọc chữ thừa)
+      playLullabyChime();
+      const warmSpeechText = generateWarmWishSpeech(userData.name, stripTikTokEmotes(messageText));
+      speakTTS(warmSpeechText, PRIORITY_WISH);
+
+      if (goodnightCount >= GOAL_TARGET) {
+        setTimeout(() => {
+          triggerMeteorShowerGoal();
+        }, 800);
+      }
+    }
+
+    function showDreamyBubble(bedId, text, isGoodnight = true) {
+      setTimeout(() => {
+        const bubble = document.getElementById(`bubble_bed_${bedId}`);
+        const bedCard = document.getElementById(`bedCard_${bedId}`);
+        if (bedCard) {
+          bedCard.style.zIndex = '50';
+        }
+        if (bubble) {
+          const txtEl = bubble.querySelector('.bubble-text');
+          const iconEl = bubble.querySelector('.bubble-icon');
+          const content = String(text || '').trim() || (isGoodnight ? 'Ngủ ngon nhé! 🌙' : 'Chào cả nhà! 👋');
+          
+          if (iconEl) {
+            iconEl.innerText = isGoodnight ? '🌙' : '💬';
+          }
+          
+          if (txtEl) {
+            // Hiển thị nếu là URL icon/emote TikTok
+            if (/^https?:\/\/.*(tiktokcdn|\.png|\.webp|\.jpg|\.jpeg|image)/i.test(content)) {
+              txtEl.innerHTML = `<img src="${content}" class="inline-block w-5 h-5 object-contain align-middle rounded" alt="icon">`;
+            } else {
+              txtEl.innerText = content;
+            }
+          }
+          bubble.classList.remove('hidden');
+          setTimeout(() => {
+            if (bubble) bubble.classList.add('hidden');
+            if (bedCard) bedCard.style.zIndex = '';
+          }, 4500);
+        }
+      }, 60);
+    }
+
+    function updateGoodnightProgressBar() {
+      const textEl = document.getElementById('goodnightGoalText');
+      const barEl = document.getElementById('goodnightProgressBar');
+      if (!textEl || !barEl) return;
+      const current = Math.min(goodnightCount, GOAL_TARGET);
+      textEl.innerText = `${current} / ${GOAL_TARGET}`;
+      barEl.style.width = `${(current / GOAL_TARGET) * 100}%`;
+    }
+
+    function triggerMeteorShowerGoal() {
+      goodnightCount = GOAL_TARGET;
+      updateGoodnightProgressBar();
+      showToast('🌌 MƯA SAO BĂNG CHÚC NGỦ NGON: CẢ PHÒNG +30 ĐIỂM!', '🌌', 'MỤC TIÊU HOÀN THÀNH');
+      logHotEvent('🌌 <b>MỤC TIÊU 25 LỜI CHÚC ĐÃ ĐẠT!</b> Cả phòng nhận +30 điểm bảo vệ giường!');
+      beds.forEach(b => {
+        if (b.occupied && b.user) {
+          b.user.points += 30;
+          b.user.hasDreamyAura = true;
+          b.user.auraExpiry = Date.now() + 40000;
+        }
+      });
+      renderBeds();
+      playMeteorShowerMusic();
+      const goalCelebrationSpeech = 'Chúc mừng cả phòng! Ký túc xá đã đạt mục tiêu 25 lời chúc ngủ ngon! Cả phòng được cộng 30 điểm và cùng ngắm mưa sao băng nhé!';
+      speakTTS(goalCelebrationSpeech, PRIORITY_GOAL);
+      startMeteorShowerCanvas(8000);
+      setTimeout(() => {
+        goodnightCount = 0;
+        updateGoodnightProgressBar();
+      }, 8200);
+    }
+
+    // ==========================================
+    // CANVAS HIỆU ỨNG 60 FPS (SAO BĂNG, MÂY, TRÁI TIM BAY)
+    // ==========================================
+    const canvas = document.getElementById('effectsCanvas');
+    const ctx = canvas ? canvas.getContext('2d') : null;
+    let particles = [];
+    let meteors = [];
+    let floatingHearts = [];
+
+    function resizeCanvas() {
+      if (!canvas) return;
+      const stage = document.getElementById('streamStage');
+      if (stage) {
+        canvas.width = stage.clientWidth || 540;
+        canvas.height = stage.clientHeight || 960;
+      }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Hiệu ứng chùm trái tim bay bổng khi người xem Thả Tim (Like)
+    function spawnFloatingHearts(count = 14) {
+      const heartSymbols = ['❤️', '💖', '💕', '💗', '💓', '💘', '✨'];
+      for (let i = 0; i < count; i++) {
+        floatingHearts.push({
+          x: (canvas.width || 540) * (0.4 + Math.random() * 0.55), // Bay từ góc dưới bên phải
+          y: (canvas.height || 960) + Math.random() * 40,
+          vy: -(Math.random() * 3.2 + 2.4),
+          symbol: heartSymbols[Math.floor(Math.random() * heartSymbols.length)],
+          size: Math.random() * 12 + 18,
+          alpha: 1,
+          wobbleSpeed: Math.random() * 0.05 + 0.02,
+          wobbleAmp: (Math.random() - 0.5) * 2.2
+        });
+      }
+    }
+
+    // Hiệu ứng pháo hoa ngôi sao lấp lánh khi có Donate VIP
+    function spawnVipGiftParticles() {
+      const vipSymbols = ['👑', '💎', '✨', '🌟', '💰', '🌙'];
+      for (let i = 0; i < 20; i++) {
+        particles.push({
+          x: Math.random() * (canvas.width || 540),
+          y: (canvas.height || 960) * (0.3 + Math.random() * 0.6),
+          vx: (Math.random() - 0.5) * 4.5,
+          vy: (Math.random() - 0.5) * 4.5 - 1.5,
+          symbol: vipSymbols[Math.floor(Math.random() * vipSymbols.length)],
+          size: Math.random() * 16 + 20,
+          alpha: 1
+        });
+      }
+    }
+
+    function spawnFloatingNightParticles() {
+      const symbols = ['🌙', '✨', '☁️', '⭐', '💤'];
+      for (let i = 0; i < 16; i++) {
+        particles.push({
+          x: Math.random() * (canvas.width || 540),
+          y: (canvas.height || 960) + Math.random() * 80,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: -(Math.random() * 2.8 + 2.0),
+          symbol: symbols[Math.floor(Math.random() * symbols.length)],
+          size: Math.random() * 14 + 18,
+          alpha: 1
+        });
+      }
+    }
+
+    function startMeteorShowerCanvas(durationMs = 8000) {
+      const startTime = Date.now();
+      const interval = setInterval(() => {
+        if (Date.now() - startTime > durationMs) { clearInterval(interval); return; }
+        for (let i = 0; i < 3; i++) {
+          meteors.push({
+            x: Math.random() * (canvas.width + 200) - 100,
+            y: -40,
+            vx: -(Math.random() * 6 + 7),
+            vy: Math.random() * 7 + 8,
+            alpha: 1,
+            color: Math.random() > 0.4 ? '#fef08a' : '#c084fc'
+          });
+        }
+      }, 180);
+    }
+
+    function animateEffects() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Vẽ hạt trăng sao, mây bay
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += (p.vx || 0); p.y += p.vy; p.alpha -= 0.007;
+        if (p.alpha <= 0 || p.y < -50) { particles.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.font = `${p.size}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(p.symbol, p.x, p.y);
+        ctx.restore();
+      }
+
+      // 2. Vẽ chùm trái tim bay bổng khi Thả Tim
+      for (let i = floatingHearts.length - 1; i >= 0; i--) {
+        const h = floatingHearts[i];
+        h.y += h.vy;
+        h.x += Math.sin(h.y * h.wobbleSpeed) * h.wobbleAmp;
+        h.alpha -= 0.008;
+        if (h.alpha <= 0 || h.y < -40) { floatingHearts.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, h.alpha);
+        ctx.font = `${h.size}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(h.symbol, h.x, h.y);
+        ctx.restore();
+      }
+
+      // 3. Vẽ vệt sao băng
+      for (let i = meteors.length - 1; i >= 0; i--) {
+        const m = meteors[i];
+        m.x += m.vx; m.y += m.vy; m.alpha -= 0.015;
+        if (m.alpha <= 0 || m.y > canvas.height + 100 || m.x < -100) { meteors.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, m.alpha);
+        ctx.strokeStyle = m.color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(m.x, m.y);
+        ctx.lineTo(m.x - m.vx * 4, m.y - m.vy * 4);
+        ctx.stroke();
+        ctx.restore();
+      }
+      requestAnimationFrame(animateEffects);
+    }
+    requestAnimationFrame(animateEffects);
+
+    // ==========================================
+    // CHÀO BẠN MỚI GHÉ PHÒNG (WELCOME BANNER ENGINE)
+    // ==========================================
+    const WELCOME_QUOTES = [
+      'Chào mừng bạn ghé thăm! Thả tim ❤️ hoặc chat "ngủ ngon" để nhận giường nhé 🌙',
+      'Ký Túc Xá mở cửa đón khách ngủ đêm! Mau chọn 1 chiếc giường nằm nghỉ ngơi nha 💤',
+      'Chúc các bạn mới vào phòng có một giấc ngủ thật ngon và mơ giấc mơ đẹp nha ✨',
+      'Còn nhiều giường trống êm ái! Bình luận bất kỳ để vào giường ngay nào 🛌',
+      'Chào mừng bạn ghé thăm! Bình luận bất kỳ hoặc thả tim ❤️ để nhận giường nhé 🌙',
+      'Ký Túc Xá mở cửa đón khách ngủ đêm! Mau bình luận bất kỳ để vào giường nha 🛌',
+      'Còn nhiều giường trống êm ái! Bình luận bất kỳ để vào giường ngay nào 💤',
+      'Chúc các bạn trong phòng có một giấc ngủ thật ngon và mơ giấc mơ đẹp nha ✨',
+      'Hãy đắp chăn ấm, buông bỏ muộn phiền và cùng cả phòng ngủ thật say nhé 🌸',
+    ];
+    let welcomeQuoteIndex = 0;
+    let welcomeResetTimer = null;
+    let welcomeCycleInterval = null;
+
+    function startWelcomeCycle() {
+      if (welcomeCycleInterval) clearInterval(welcomeCycleInterval);
+      welcomeCycleInterval = setInterval(cycleWelcomeQuote, 8000);
+    }
+
+    function updateWelcomeBanner(name, avatar) {
+      const banner = document.getElementById('welcomeBannerSection');
+      const content = document.getElementById('welcomeMessageContent');
+      const badge = document.getElementById('newViewerBadge');
+      const avatarEl = document.getElementById('newViewerAvatar');
+      const nameEl = document.getElementById('newViewerName');
+
+      const safeName = (name && name !== 'undefined' && name !== 'null') ? name : 'Bạn Mới';
+      const safeAvatar = (avatar && avatar !== 'undefined' && avatar !== 'null') ? avatar : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(safeName)}`;
+
+      if (content) {
+        content.innerHTML = `👋 Chào mừng <span class="text-yellow-300 font-black">${escapeHtml(safeName)}</span> ghé phòng! Bình luận bất kỳ để vào giường nhé 🛌`;
+      }
+
+      if (badge && avatarEl && nameEl) {
+        avatarEl.src = safeAvatar;
+        nameEl.innerText = safeName;
+        badge.classList.remove('hidden');
+      }
+
+      if (banner) {
+        banner.classList.add('border-pink-400', 'shadow-pink-500/40');
+        setTimeout(() => {
+          if (banner) banner.classList.remove('border-pink-400', 'shadow-pink-500/40');
+        }, 4000);
+      }
+
+      // Giữ câu chào người mới trong 9 giây trước khi tiếp tục xoay tua các câu chúc
+      if (welcomeCycleInterval) clearInterval(welcomeCycleInterval);
+      if (welcomeResetTimer) clearTimeout(welcomeResetTimer);
+      welcomeResetTimer = setTimeout(() => {
+        cycleWelcomeQuote();
+        startWelcomeCycle();
+      }, 9000);
+    }
+
+    function cycleWelcomeQuote() {
+      const content = document.getElementById('welcomeMessageContent');
+      if (!content) return;
+      welcomeQuoteIndex = (welcomeQuoteIndex + 1) % WELCOME_QUOTES.length;
+      content.style.opacity = '0';
+      setTimeout(() => {
+        content.innerHTML = WELCOME_QUOTES[welcomeQuoteIndex];
+        content.style.opacity = '1';
+      }, 300);
+    }
+
+    startWelcomeCycle();
+
+    // ==========================================
+    // LIVE CHAT & TOAST
+    // ==========================================
+    function formatCommentForChat(comment) {
+      if (!comment) return 'chúc cả phòng ngủ ngon';
+      const s = String(comment).trim();
+      if (/^https?:\/\/.*(tiktokcdn|\.png|\.webp|\.jpg|\.jpeg|image)/i.test(s)) {
+        return `<img src="${escapeHtml(s)}" class="inline-block w-6 h-6 object-contain align-middle rounded mx-0.5 shadow-sm" alt="icon">`;
+      }
+      return escapeHtml(s);
+    }
+
+    function addChatMessage(data) {
+      const list = document.getElementById('chatMessageList');
+      if (!list || !data) return;
+      const { user = {}, comment, isGoodnight = false, bedId = null } = data;
+      const safeName = (user.name && user.name !== 'undefined' && user.name !== 'null') ? user.name : (user.nickname || 'Khách Xem');
+      const safeAvatar = (user.avatar && user.avatar !== 'undefined' && user.avatar !== 'null') ? user.avatar : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(safeName)}`;
+      const safeComment = (comment !== undefined && comment !== null && String(comment).trim() !== '') ? String(comment).trim() : (isGoodnight ? 'chúc cả phòng ngủ ngon' : '💬');
+
+      let badgeHtml = isGoodnight
+        ? `<span class="bg-gradient-to-r from-purple-600 to-indigo-600 text-yellow-300 px-1.5 py-0.5 rounded font-black text-[9px]">🌙 CHÚC NGỦ NGON</span>`
+        : (user.tier === 3 ? `<span class="bg-amber-500 text-slate-950 px-1 py-0.5 rounded font-black text-[9px]">👑 VIP</span>`
+          : (user.tier === 2 ? `<span class="bg-emerald-600 text-white px-1 py-0.5 rounded font-black text-[9px]">⭐ FAN</span>`
+            : (user.tier === 1 ? `<span class="bg-cyan-600 text-white px-1 py-0.5 rounded font-black text-[9px]">❤️ CẤP 1</span>`
+              : `<span class="bg-slate-700 text-slate-300 px-1 py-0.5 rounded font-bold text-[9px]">👋 MỚI</span>`)));
+
+      const bedTag = bedId ? `<span class="text-cyan-400 font-bold ml-1">🛌 #${bedId}</span>` : '';
+      const msgClass = isGoodnight
+        ? 'border-2 border-purple-400 bg-purple-950/70 shadow-lg shadow-purple-500/40 rounded-xl p-1.5'
+        : 'bg-slate-900/60 border border-slate-800/80 rounded-lg p-1.5';
+
+      const item = document.createElement('div');
+      item.className = `${msgClass} flex items-start gap-1.5 text-xs transition-all`;
+      item.innerHTML = `
+        <img src="${safeAvatar}" class="w-5 h-5 rounded-full object-cover border border-slate-600 mt-0.5 shrink-0" alt="${safeName}">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1 flex-wrap leading-tight">
+            ${badgeHtml}
+            <span class="font-bold text-white text-[11px] truncate max-w-[85px]">${safeName}</span>
+            ${bedTag}
+          </div>
+          <p class="${isGoodnight ? 'text-purple-100 font-bold' : 'text-slate-200'} text-[11px] break-words mt-0.5 flex items-center flex-wrap gap-1">
+            ${formatCommentForChat(safeComment)}
+          </p>
+        </div>
+      `;
+      list.appendChild(item);
+      while (list.children.length > 25) list.removeChild(list.firstChild);
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function logHotEvent(msg) {
+      const list = document.getElementById('hotEventsList');
+      if (!list) return;
+      const item = document.createElement('div');
+      item.className = 'p-1 bg-slate-900/70 border border-slate-800 rounded text-[10px] leading-tight text-slate-200';
+      item.innerHTML = msg;
+      list.prepend(item);
+      while (list.children.length > 18) list.removeChild(list.lastChild);
+    }
+
+    let toastTimeout = null;
+    function showToast(msg, icon = '🌙', title = 'SỰ KIỆN KÝ TÚC XÁ') {
+      const toast = document.getElementById('liveToastBanner');
+      if (!toast) return;
+      document.getElementById('toastMessage').innerText = msg;
+      document.getElementById('toastIcon').innerText = icon;
+      document.getElementById('toastTitle').innerText = title;
+      toast.classList.remove('-translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('-translate-y-20', 'opacity-0');
+      }, 4200);
+    }
+
+    let streamStartTime = Date.now();
+    function updateLiveTimer() {
+      const elapsedMs = Math.max(0, Date.now() - streamStartTime);
+      const totalSeconds = Math.floor(elapsedMs / 1000);
+      const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+      const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+      const s = String(totalSeconds % 60).padStart(2, '0');
+      const clockEl = document.getElementById('realTimeClock');
+      if (clockEl) clockEl.innerText = `${h}:${m}:${s}`;
+    }
+    setInterval(updateLiveTimer, 1000);
+    updateLiveTimer();
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Đồng bộ giường từ Server (Bảo vệ người đang nằm trên giường, không để sự kiện thường ghi đè)
+    function syncBedsFromServer(serverBeds, allowOverwrite = false) {
+      if (!serverBeds || !Array.isArray(serverBeds)) return;
+      serverBeds.forEach((sb, idx) => {
+        if (idx < beds.length) {
+          if (sb.user) {
+            let rawName = sb.user.nickname || sb.user.name;
+            if (rawName === 'undefined' || rawName === 'null') rawName = '';
+            const safeName = String(rawName || 'Khách Xem');
+
+            let rawId = sb.user.uniqueId || sb.user.userId || sb.user.id;
+            if (rawId === 'undefined' || rawId === 'null') rawId = '';
+            const safeId = String(rawId || ('u_' + sb.id));
+
+            let rawAvatar = sb.user.avatar || sb.user.profilePictureUrl;
+            if (rawAvatar === 'undefined' || rawAvatar === 'null') rawAvatar = '';
+            const safeAvatar = rawAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(safeName)}`;
+
+            const incomingTier = sb.user.coins > 0 || sb.level >= 4 ? 3 : (sb.level >= 2 ? 2 : 1);
+            const currentOccupant = beds[idx].occupied ? beds[idx].user : null;
+
+            // Quy tắc thế chỗ: tính điểm ai ít sao hơn thì bị đá
+            if (currentOccupant && String(currentOccupant.id) !== safeId && !allowOverwrite) {
+              const currentPoints = currentOccupant.points || 0;
+              const serverNewPoints = sb.user.points || 0;
+              // Nếu người mới không nhiều sao hơn người đang nằm thì giữ nguyên người đang ngủ
+              if (serverNewPoints <= currentPoints) {
+                return;
+              }
+            }
+
+            beds[idx].occupied = true;
+            beds[idx].user = {
+              id: safeId,
+              name: safeName,
+              avatar: safeAvatar,
+              tier: currentOccupant && String(currentOccupant.id) === safeId ? Math.max(currentOccupant.tier || 1, incomingTier) : incomingTier,
+              points: sb.user.points || (currentOccupant ? currentOccupant.points : 40),
+              coins: sb.user.coins || (currentOccupant ? currentOccupant.coins : 0),
+              hasDreamyAura: Boolean(sb.user.hasWarmBlanket || (currentOccupant && currentOccupant.hasDreamyAura && Date.now() < currentOccupant.auraExpiry)),
+              auraExpiry: Math.max(sb.user.blanketUntil || 0, (currentOccupant && currentOccupant.auraExpiry) || 0)
+            };
+          } else if (allowOverwrite) {
+            beds[idx].occupied = false;
+            beds[idx].user = null;
+          }
+        }
+      });
+      renderBeds();
+    }
+
+    // ==========================================
+    // KẾT NỐI SOCKET.IO VỚI SERVER & ADMIN
+    // ==========================================
+    function initSocket() {
+      if (typeof io === 'undefined') return;
+      try {
+        const socket = io({ transports: ['websocket', 'polling'] });
+
+        // Đồng bộ danh sách giường & thời lượng livestream từ server
+        socket.on('init_state', data => {
+          if (data && data.beds) syncBedsFromServer(data.beds, true);
+          if (data && data.streamStartTime) {
+            streamStartTime = data.streamStartTime;
+            updateLiveTimer();
+          }
+          if (data && data.config) {
+            if (data.config.welcomeVoiceEnabled !== undefined) isWelcomeVoiceEnabled = data.config.welcomeVoiceEnabled;
+            if (data.config.ttsEnabled !== undefined) isTTSEnabled = data.config.ttsEnabled;
+          }
+        });
+
+        socket.on('beds_update', serverBeds => {
+          syncBedsFromServer(serverBeds, false);
+        });
+
+        socket.on('user_expelled', data => {
+          if (data && data.bedId) {
+            const target = beds.find(b => b.id === Number(data.bedId));
+            if (target) {
+              target.occupied = false;
+              target.user = null;
+              renderBeds();
+            }
+          }
+        });
+
+        socket.on('beds_reset', () => {
+          beds.forEach(b => { b.occupied = false; b.user = null; });
+          streamStartTime = Date.now();
+          updateLiveTimer();
+          renderBeds();
+        });
+
+        socket.on('timer_reset', data => {
+          streamStartTime = (data && data.streamStartTime) ? data.streamStartTime : Date.now();
+          updateLiveTimer();
+        });
+
+        // Nhận lệnh chúc ngủ ngon
+        socket.on('goodnight_trigger', data => {
+          if (data && data.user) {
+            triggerGoodnightEvent(data.user, data.comment || 'Chúc cả phòng ngủ ngon');
+          }
+        });
+
+        // Nhận tin nhắn chat
+        socket.on('chat_message', data => {
+          if (data && (data.comment !== undefined && data.comment !== null)) {
+            const commentStr = String(data.comment).trim();
+            const safeComment = commentStr || '💬';
+            // Bản hiển thị: đổi mã icon TikTok [laugh] -> 😆
+            const displayComment = convertTikTokEmotes(safeComment);
+
+            let rawName = data.nickname || data.name;
+            if (rawName === 'undefined' || rawName === 'null') rawName = '';
+            const safeName = String(rawName || 'Khách Xem');
+
+            let rawId = data.uniqueId || data.userId;
+            if (rawId === 'undefined' || rawId === 'null') rawId = '';
+            const safeId = String(rawId || ('u_' + Date.now()));
+
+            let rawAvatar = data.avatar || data.profilePictureUrl;
+            if (rawAvatar === 'undefined' || rawAvatar === 'null') rawAvatar = '';
+            const safeAvatar = rawAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(safeName)}`;
+
+            const userObj = {
+              id: safeId,
+              name: safeName,
+              avatar: safeAvatar
+            };
+            if (checkGoodnightKeyword(safeComment)) {
+              // CÓ TỪ KHÓA: Kích hoạt sự kiện Chúc Ngủ Ngon (Hiệu ứng + Giọng đọc AI)
+              triggerGoodnightEvent(userObj, safeComment);
+            } else {
+              // KHÔNG CÓ TỪ KHÓA: Vẫn hiển thị lên màn hình (bong bóng trên giường + khung chat), NHƯNG TUYỆT ĐỐI KHÔNG ĐỌC
+              let userBed = findUserBed(userObj.id);
+              let targetBedId = null;
+              if (userBed) {
+                userBed.user.points += 5;
+                targetBedId = userBed.id;
+                renderBeds();
+              } else {
+                const res = assignBed(userObj, 1, 30);
+                if (res.success) {
+                  targetBedId = res.bedId;
+                  if (res.type !== 'kicked_bed') {
+                    showToast(`🛌 ${userObj.name} vừa bình luận và nhận Giường #${targetBedId}!`, '🛌', 'VÀO GIƯỜNG');
+                    logHotEvent(`🛌 <b>${userObj.name}</b> vừa bình luận -> Nhận Giường #${targetBedId}!`);
+                  }
+                }
+              }
+
+              // 1. Hiện bong bóng chat trên đầu giường người đó
+              if (targetBedId) {
+                showDreamyBubble(targetBedId, displayComment, false);
+              }
+
+              // 2. Thêm vào khung Live Chat dưới màn hình
+              addChatMessage({
+                user: { id: userObj.id, name: userObj.name, avatar: userObj.avatar, tier: 1 },
+                comment: displayComment, isGoodnight: false, bedId: targetBedId
+              });
+
+              // Không đọc giọng TTS cho bình luận thông thường
+            }
+          }
+        });
+
+        // Nhận sự kiện Like (Thả tim: Hiện chùm trái tim bay + Cảm ơn)
+        let lastLikeVoiceTime = 0;
+        socket.on('like_event', data => {
+          if (data) {
+            spawnFloatingHearts(14); // Bắn chùm trái tim đủ màu bay bổng lên màn hình
+            assignBed({
+              id: data.uniqueId, name: data.nickname,
+              avatar: data.profilePictureUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(data.nickname)}`
+            }, 1, 20);
+
+            // Cảm ơn thả tim nhẹ nhàng (giãn cách ít nhất 8s để không đè âm thanh)
+            const now = Date.now();
+            if (now - lastLikeVoiceTime > 8000) {
+              lastLikeVoiceTime = now;
+              const spokenName = formatNameForSpeech(data.nickname);
+              speakTTS(`Cảm ơn ${spokenName} đã thả tim ủng hộ ký túc xá nhé!`, PRIORITY_LOW);
+            }
+          }
+        });
+
+        // Nhận sự kiện Chia Sẻ Live (Cảm ơn chia sẻ + Ưu tiên Cấp 1)
+        socket.on('share_event', data => {
+          if (data) {
+            spawnFloatingHearts(10);
+            assignBed({
+              id: data.uniqueId, name: data.nickname,
+              avatar: data.profilePictureUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(data.nickname)}`
+            }, 1, 35);
+
+            showToast(`📢 ${data.nickname} vừa CHIA SẺ phiên LIVE đến bạn bè!`, '📢', 'CHIA SẺ LIVE');
+            logHotEvent(`📢 <b>${data.nickname}</b> vừa chia sẻ phiên LIVE -> Ưu tiên giữ giường!`);
+            const spokenName = formatNameForSpeech(data.nickname);
+            speakTTS(`Cảm ơn bạn ${spokenName} rất nhiều đã chia sẻ phiên live ký túc xá đến mọi người nhé. Chúc bạn có một giấc ngủ thật êm đềm và ngon giấc nha!`, PRIORITY_NORMAL);
+          }
+        });
+
+        // Nhận sự kiện Follow (Cảm ơn theo dõi)
+        socket.on('follow_event', data => {
+          if (data) {
+            assignBed({
+              id: data.uniqueId, name: data.nickname,
+              avatar: data.profilePictureUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(data.nickname)}`
+            }, 2, 45);
+
+            showToast(`⭐ ${data.nickname} đã bấm Theo Dõi chủ phòng!`, '⭐', 'FAN CỨNG MỚI');
+            const spokenName = formatNameForSpeech(data.nickname);
+            speakTTS(`Cảm ơn bạn ${spokenName} đã bấm theo dõi ký túc xá nhé. Chúc bạn có một giấc ngủ thật ngon nha!`, PRIORITY_NORMAL);
+          }
+        });
+
+        // Nhận sự kiện Quà VIP (Donate: Hệ thống ưu tiên Cấp 3 Hoàng Gia + Lời chúc tài lộc)
+        const DONATE_WISH_TEMPLATES = [
+          "Cảm ơn bạn {name} rất nhiều đã tặng {gift} cho ký túc xá nhé! Ký túc xá trân trọng mời bạn lên Giường Hoàng Gia. Chúc {name} phát tài phát lộc và ngủ thật ngon nha!",
+          "Cảm ơn mạnh thường quân {name} đã donate {gift}! Ký túc xá gửi tặng vị trí VIP nhất đến bạn. Chúc {name} buôn may bán đắt và có một giấc mơ vàng nhé!",
+          "Ký túc xá xin gửi lời cảm ơn tới bạn {name} với món quà {gift} quý giá! Chúc {name} luôn bình an, may mắn và ngủ thật say trên Giường Hoàng Gia nhé!"
+        ];
+
+        socket.on('gift_event', data => {
+          if (data) {
+            const diamonds = Number(data.diamonds) || 1;
+            const count = Number(data.count) || 1;
+            const giftName = data.giftName || 'Hoa Hồng';
+            const nickname = data.nickname || 'Bạn Xem';
+            const spokenName = formatNameForSpeech(nickname);
+
+            // Kiểm tra nếu là Tặng Bông / Hoa Hồng
+            const isRose = giftName.toLowerCase().includes('bông') || giftName.toLowerCase().includes('hoa hồng') || giftName.toLowerCase().includes('rose');
+
+            if (isRose) {
+              const targetTier = diamonds >= 10 ? 3 : 2;
+              assignBed({
+                id: data.uniqueId, name: nickname,
+                avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nickname)}`
+              }, targetTier, 40 + diamonds * 5, diamonds);
+
+              createFloatingHearts(18);
+              playWindChimeSound();
+
+              showToast(`🌹 ${nickname} vừa gửi tặng ${count > 1 ? count + ' ' : ''}${giftName}!`, '🌹', 'TẶNG BÔNG ỦNG HỘ');
+              logHotEvent(`🌹 <b>${nickname}</b> tặng ${count > 1 ? count + ' ' : ''}${giftName} -> Vinh danh người ủng hộ!`);
+
+              const roseSpeech = count > 1
+                ? `Cảm ơn bạn ${spokenName} đã tặng ${count} bông hoa hồng ủng hộ ký túc xá nhé! Chúc bạn ngủ thật ngon nha!`
+                : `Cảm ơn bạn ${spokenName} đã gửi tặng bông hoa hồng xinh xắn nhé! Chúc bạn có một giấc ngủ thật ngon lành!`;
+              speakTTS(roseSpeech, PRIORITY_GIFT);
+
+            } else {
+              // Quà tặng lớn / Quà VIP
+              assignBed({
+                id: data.uniqueId, name: nickname,
+                avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nickname)}`
+              }, 3, 80 + diamonds * 2, diamonds);
+
+              spawnVipGiftParticles();
+              showToast(`👑 ${nickname} vừa DONATE ${giftName} (${diamonds} Xu)! Cả phòng chào đón Đại Gia VIP!`, '👑', 'ĐẶC QUYỀN VIP');
+              logHotEvent(`👑 <b>${nickname}</b> DONATE ${giftName} (${diamonds} Xu) -> Vinh danh Đại Gia VIP!`);
+
+              const tpl = DONATE_WISH_TEMPLATES[Math.floor(Math.random() * DONATE_WISH_TEMPLATES.length)];
+              const speechText = tpl.replace(/{name}/g, spokenName).replace(/{gift}/g, giftName);
+              speakTTS(speechText, PRIORITY_GIFT);
+            }
+          }
+        });
+
+        // Nhận lệnh kích hoạt Mưa Sao Băng (Mục tiêu 25 lời chúc) từ Host/Admin
+        socket.on('admin_trigger_goal', () => {
+          goodnightCount = GOAL_TARGET;
+          updateGoodnightProgressBar();
+          triggerMeteorShowerGoal();
+        });
+
+        // Nhận sự kiện Người xem vào phòng -> CHÀO NGƯỜI VÀO XEM
+        socket.on('viewer_join', data => {
+          if (data) {
+            const name = data.nickname || data.name || 'Khách Mới';
+            const avatar = data.avatar || data.profilePictureUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`;
+
+            updateWelcomeBanner(name, avatar);
+
+            addChatMessage({
+              user: { id: data.uniqueId || ('u_' + Date.now()), name: name, avatar: avatar, tier: 0 },
+              comment: 'vừa vào phòng Ký Túc Xá! 👋', isGoodnight: false, bedId: null
+            });
+            showToast(`Chào mừng ${name} vào Ký Túc Xá!`, '👋', 'CHÀO BẠN MỚI');
+
+            // Đọc giọng AI chào người mới vào phòng (cooldown 6s chống spam)
+            speakWelcomeViewer(name);
+          }
+        });
+
+        // Nhận sự kiện Reset phòng
+        socket.on('beds_reset', () => {
+          beds.forEach(b => { b.occupied = false; b.user = null; });
+          goodnightCount = 0;
+          updateGoodnightProgressBar();
+          renderBeds();
+          logHotEvent('🧹 <b>Quản lý đã dọn sạch toàn bộ 20 giường!</b>');
+        });
+
+        // Cập nhật cấu hình âm thanh từ Admin
+        socket.on('config_update', cfg => {
+          if (cfg) {
+            if (cfg.ttsEnabled !== undefined) isTTSEnabled = cfg.ttsEnabled;
+            if (cfg.welcomeVoiceEnabled !== undefined) isWelcomeVoiceEnabled = cfg.welcomeVoiceEnabled;
+            if (cfg.windChimeEnabled !== undefined) isAudioEnabled = cfg.windChimeEnabled;
+            if (cfg.bgmEnabled !== undefined) {
+              if (cfg.bgmEnabled && !isBgmPlaying) startLullabyBGM();
+              else if (!cfg.bgmEnabled && isBgmPlaying) stopLullabyBGM();
+            }
+            if (cfg.bgmVolume !== undefined) {
+              changeBgmVolume(cfg.bgmVolume);
+              const slider = document.getElementById('bgmVolumeSlider');
+              if (slider) slider.value = cfg.bgmVolume;
+            }
+          }
+        });
+
+      } catch (e) { }
+    }
+
+    // Tự động căn chỉnh và co giãn sắc nét Full HD (Auto Scale to Fit Viewport)
+    function autoFitStreamStage() {
+      const stage = document.getElementById('streamStage');
+      if (!stage) return;
+      const baseWidth = 540;
+      const baseHeight = 960;
+      const currentWidth = window.innerWidth;
+      const currentHeight = window.innerHeight;
+      if (!currentWidth || !currentHeight) return;
+
+      const scale = Math.min(currentWidth / baseWidth, currentHeight / baseHeight);
+      stage.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', autoFitStreamStage);
+
+    // ==========================================
+    // KHỞI CHẠY LẦN ĐẦU
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      autoFitStreamStage();
+      renderBeds();
+      updateGoodnightProgressBar();
+      initSocket();
+
+      // Tự động khởi động nhạc ru ngủ du dương
+      startLullabyBGM();
+      document.body.addEventListener('click', () => {
+        getAudioContext();
+        if (!isBgmPlaying) startLullabyBGM();
+      }, { once: true });
+    });
+  </script>
+</body>
+
+</html>

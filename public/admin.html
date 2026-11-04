@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Điều Khiển Streamer - Ký Túc Xá Đi Ngủ Online</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            midnight: '#090d16',
+            nightcard: '#111827',
+            neonPurple: '#a855f7',
+            royalGold: '#f59e0b'
+          },
+          fontFamily: {
+            sans: ['Outfit', 'Quicksand', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen p-4 md:p-6 font-sans select-none">
+
+  <!-- TOP HEADER -->
+  <header class="max-w-[1440px] mx-auto mb-6 flex flex-wrap items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-xl">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-purple-600/30 border border-purple-500 flex items-center justify-center text-purple-300 text-xl font-black shadow-lg shadow-purple-600/30">
+        🌙
+      </div>
+      <div>
+        <h1 class="text-lg md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-purple-300 to-pink-300 tracking-wide">
+          BẢNG ĐIỀU KHIỂN - KÝ TÚC XÁ ĐI NGỦ ONLINE
+        </h1>
+        <p class="text-xs text-slate-400">Trang quản trị dành riêng cho Streamer (tách biệt hoàn toàn với màn hình Livestream)</p>
+      </div>
+    </div>
+
+    <!-- Quick Actions & Live Timer -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-950 border border-purple-500/40 rounded-xl text-xs font-mono font-bold text-cyan-300 shadow-sm" title="Thời lượng phát trực tiếp">
+        <span class="text-pink-400">⏱️</span>
+        <span id="adminLiveTimer">00:00:00</span>
+        <button onclick="adminResetTimer()" title="Reset Giờ Live về 00:00:00" class="ml-1 text-[11px] text-purple-300 hover:text-white px-1.5 py-0.5 bg-purple-900/60 hover:bg-purple-800 rounded transition">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+      <a href="/overlay.html" target="_blank" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-black rounded-xl shadow-lg shadow-purple-600/30 transition flex items-center gap-2">
+        <i class="fa-solid fa-up-right-from-square"></i> Mở Màn Hình Overlay (9:16)
+      </a>
+      <div class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300">
+        <span id="serverStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+        <span id="serverStatusText">Server Sẵn Sàng</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 3 COLUMNS DASHBOARD -->
+  <main class="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- ==========================================
+         CỘT 1 (4/12): KẾT NỐI TIKTOK LIVE & CÀI ĐẶT
+         ========================================== -->
+    <div class="lg:col-span-4 flex flex-col gap-5">
+      
+      <!-- Khối Kết Nối TikTok LIVE Thật -->
+      <div class="bg-slate-900/90 border border-pink-500/30 rounded-2xl p-5 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <span class="text-sm font-extrabold text-white flex items-center gap-2">
+            <i class="fa-brands fa-tiktok text-pink-500 text-base"></i> KẾT NỐI TIKTOK LIVE THẬT
+          </span>
+          <span id="tiktokStatusBadge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+            Chưa Kết Nối
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-bold text-slate-300">Nhập Username TikTok đang phát LIVE:</label>
+          <div class="flex gap-2">
+            <div class="relative flex-1">
+              <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-500">@</span>
+              <input type="text" id="adminTikTokInput" placeholder="ví dụ: nguyenvana..." class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-7 pr-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono">
+            </div>
+            <button id="btnAdminConnectTikTok" onclick="adminToggleTikTok()" class="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-extrabold text-xs rounded-xl transition shadow-md shadow-pink-600/30 whitespace-nowrap flex items-center gap-1.5">
+              <i class="fa-solid fa-link"></i> Kết Nối
+            </button>
+          </div>
+        </div>
+
+        <div class="p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+          💡 <b>Lưu ý:</b> Kênh TikTok bắt buộc phải <b>đang phát trực tiếp (LIVE)</b>. Không cần nhập mật khẩu. Hệ thống sẽ tự động bắt bình luận, quà tặng và lời chúc ngủ ngon đưa lên màn hình Ký Túc Xá.
+        </div>
+      </div>
+
+      <!-- Khối Cài Đặt Âm Thanh & Giọng Đọc AI -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+        <h2 class="text-sm font-extrabold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-purple-400"></i> CÀI ĐẶT ÂM THANH & GIỌNG ĐỌC
+        </h2>
+
+        <div class="space-y-3">
+          <!-- Toggle Nhạc Nền Ru Ngủ Du Dương -->
+          <div class="p-3 bg-purple-950/40 rounded-xl border border-purple-500/40 flex flex-col gap-2">
+            <label class="flex items-center justify-between cursor-pointer">
+              <span class="text-xs font-black text-purple-200 flex items-center gap-2">
+                <i class="fa-solid fa-music text-yellow-300"></i> Nhạc Ru Ngủ Du Dương (Lullaby BGM)
+              </span>
+              <input type="checkbox" id="adminToggleBGM" checked onchange="updateSettings()" class="w-4 h-4 accent-purple-500 cursor-pointer">
+            </label>
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span>Âm lượng nhạc nền:</span>
+              <input type="range" id="adminBgmVolumeSlider" min="0" max="100" value="25" oninput="changeAdminBgmVolume(this.value)" class="w-32 accent-purple-500 h-1.5 cursor-pointer">
+            </div>
+          </div>
+
+          <!-- Toggle Âm Thanh Chuông Ru Ngủ -->
+          <label class="flex items-center justify-between p-2.5 bg-slate-950/60 rounded-xl border border-slate-800 hover:border-purple-600/40 cursor-pointer transition">
+            <span class="text-xs font-bold text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-bell text-purple-400"></i> Tiếng Chuông Ngân Ru Ngủ (Chime)
+            </span>
+            <input type="checkbox" id="adminToggleAudio" checked onchange="updateSettings()" class="w-4 h-4 accent-purple-600 cursor-pointer">
+          </label>
+
+          <!-- Toggle Giọng Đọc AI -->
+          <label class="flex items-center justify-between p-2.5 bg-slate-950/60 rounded-xl border border-slate-800 hover:border-yellow-600/40 cursor-pointer transition">
+            <span class="text-xs font-bold text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-volume-high text-yellow-400"></i> Giọng Đọc AI Ấm Áp (Tiếng Việt)
+            </span>
+            <input type="checkbox" id="adminToggleTTS" checked onchange="updateSettings()" class="w-4 h-4 accent-yellow-500 cursor-pointer">
+          </label>
+
+          <!-- Toggle Chào Người Vào Xem -->
+          <label class="flex items-center justify-between p-2.5 bg-slate-950/60 rounded-xl border border-slate-800 hover:border-pink-600/40 cursor-pointer transition">
+            <span class="text-xs font-bold text-slate-200 flex items-center gap-2">
+              <span class="text-pink-400">👋</span> Đọc Chào Người Vào Xem (TTS)
+            </span>
+            <input type="checkbox" id="adminToggleWelcomeVoice" checked onchange="updateSettings()" class="w-4 h-4 accent-pink-500 cursor-pointer">
+          </label>
+
+          <!-- Toggle Trừ Điểm Sao Theo Thời Gian (Thấp nhất 40⭐) -->
+          <label class="flex items-center justify-between p-2.5 bg-slate-950/60 rounded-xl border border-slate-800 hover:border-yellow-600/40 cursor-pointer transition">
+            <div class="flex flex-col">
+              <span class="text-xs font-bold text-yellow-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-hourglass-half"></i> Trừ Điểm Sao Theo Thời Gian
+              </span>
+              <span class="text-[10px] text-slate-400">Giảm dần 5⭐ mỗi 15s nếu không tương tác, thấp nhất 40⭐</span>
+            </div>
+            <input type="checkbox" id="adminToggleDecay" checked onchange="updateSettings()" class="w-4 h-4 accent-yellow-500 cursor-pointer">
+          </label>
+
+          <!-- Nút Nghe Thử Giọng Tiếng Việt Ấm Áp -->
+          <button onclick="adminTestVoice()" class="w-full py-2.5 px-3 bg-gradient-to-r from-purple-900 to-indigo-900 hover:from-purple-800 hover:to-indigo-800 border border-purple-500/60 rounded-xl text-xs font-black text-yellow-300 transition flex items-center justify-center gap-2 shadow-lg shadow-purple-950/50">
+            <span>🔊</span> Nghe Thử Giọng Nói Ấm Áp Ru Ngủ
+          </button>
+
+          <!-- Toggle Auto Simulator -->
+          <label class="flex items-center justify-between p-3 bg-slate-950/80 rounded-xl border border-pink-900/40 cursor-pointer transition">
+            <div class="flex flex-col">
+              <span class="text-xs font-bold text-pink-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-robot"></i> Auto-Simulator (Chế độ chạy thử ngẫu nhiên)
+              </span>
+              <span class="text-[10px] text-slate-400">Tự động mô phỏng liên tục (Mặc định: TẮT để live thật)</span>
+            </div>
+            <input type="checkbox" id="adminToggleSim" onchange="toggleAdminSim()" class="w-5 h-5 accent-pink-500 cursor-pointer">
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==========================================
+         CỘT 2 (4/12): BỘ TEST TÍNH NĂNG CHUYÊN NGHIỆP
+         ========================================== -->
+    <div class="lg:col-span-4 flex flex-col gap-5">
+      
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+        <h2 class="text-sm font-extrabold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles text-yellow-300"></i> BỘ TEST CHUYÊN BIỆT
+        </h2>
+
+        <!-- Nút Test Chúc Ngủ Ngon -->
+        <button onclick="adminSimulateGoodnight()" class="w-full py-3.5 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl font-black text-sm shadow-xl shadow-purple-600/30 border border-purple-400/50 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+          <span class="text-xl">🌙</span> Test Chúc Ngủ Ngon (Goodnight Feature)
+        </button>
+
+        <!-- Nút Kích Hoạt Mưa Sao Băng 25/25 -->
+        <button onclick="adminTriggerMeteorShower()" class="w-full py-3 px-4 bg-gradient-to-r from-amber-600 via-orange-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 rounded-xl font-black text-xs shadow-lg shadow-yellow-600/30 border border-yellow-300 transition-all flex items-center justify-center gap-2">
+          <span class="text-base">🌌</span> Kích Hoạt Mưa Sao Băng (Mục Tiêu 25 Lời Chúc)
+        </button>
+
+        <!-- Các Nút Giả Lập Tương Tác -->
+        <div class="pt-2 border-t border-slate-800 flex flex-col gap-2">
+          <span class="text-xs font-bold text-slate-400">GIẢ LẬP TƯƠNG TÁC NGƯỜI XEM (ĐÁ GIƯỜNG):</span>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="adminSimulateJoin()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5">
+              <span class="text-cyan-400">👋</span> Vào Phòng (Cấp 0)
+            </button>
+            <button onclick="adminSimulateLike()" class="py-2.5 px-3 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 text-xs font-bold rounded-xl border border-cyan-800 transition flex items-center justify-center gap-1.5">
+              <span class="text-red-400">❤️</span> Thả Tim (Cấp 1)
+            </button>
+            <button onclick="adminSimulateShare()" class="py-2.5 px-3 bg-blue-950/80 hover:bg-blue-900 text-blue-200 text-xs font-bold rounded-xl border border-blue-700 transition flex items-center justify-center gap-1.5">
+              <span class="text-blue-400">📢</span> Chia Sẻ Live (Cấp 1)
+            </button>
+            <button onclick="adminSimulateFollow()" class="py-2.5 px-3 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 text-xs font-bold rounded-xl border border-emerald-700 transition flex items-center justify-center gap-1.5">
+              <span class="text-emerald-400">⭐</span> Follow (Đá Cấp 1)
+            </button>
+            <!-- NÚT TEST BÌNH LUẬN BẤT KỲ VÀO GIƯỜNG -->
+            <button onclick="adminSimulateRandomChat()" class="col-span-2 py-2.5 px-3 bg-gradient-to-r from-indigo-950 via-purple-950 to-indigo-900 hover:from-indigo-900 hover:to-purple-800 text-indigo-200 text-xs font-extrabold rounded-xl border border-indigo-500/60 transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-950/50">
+              <span class="text-indigo-400">💬</span> Test Bình Luận Bất Kỳ (Vào Giường Ngay)
+            </button>
+            <!-- NÚT TEST TẶNG BÔNG (HOA HỒNG) MỚI -->
+            <button onclick="adminSimulateRose()" class="py-2.5 px-3 bg-gradient-to-r from-rose-950/90 via-pink-950/90 to-rose-900/90 hover:from-rose-900 hover:to-pink-800 text-rose-200 text-xs font-extrabold rounded-xl border border-rose-500/60 transition flex items-center justify-center gap-1.5 shadow-md shadow-rose-950/50">
+              <span class="text-base">🌹</span> Test Tặng Bông (1 Bông)
+            </button>
+            <button onclick="adminSimulateRoseCombo()" class="py-2.5 px-3 bg-gradient-to-r from-red-950/90 via-rose-950/90 to-pink-900/90 hover:from-red-900 hover:to-rose-800 text-red-200 text-xs font-extrabold rounded-xl border border-red-500/60 transition flex items-center justify-center gap-1.5 shadow-md shadow-red-950/50">
+              <span class="text-base">💐</span> Combo 10 Bông (10 Xu)
+            </button>
+            <!-- NÚT TEST QUÀ VIP -->
+            <button onclick="adminSimulateGift()" class="col-span-2 py-2.5 px-3 bg-amber-950/80 hover:bg-amber-900 text-yellow-300 text-xs font-bold rounded-xl border border-yellow-600 transition flex items-center justify-center gap-1.5 shadow-lg shadow-yellow-950/40">
+              <span class="text-yellow-400">👑</span> Quà VIP Hoàng Gia (Đá Mọi Cấp)
+            </button>
+          </div>
+        </div>
+
+        <!-- Ô Nhập Tin Nhắn Chat Trực Tiếp -->
+        <div class="pt-2 border-t border-slate-800 flex flex-col gap-2">
+          <label class="text-xs font-bold text-slate-300 flex items-center justify-between">
+            <span>GỬI CHAT TRỰC TIẾP (TEST TỪ KHÓA):</span>
+            <span class="text-[10px] text-purple-400">Hỗ trợ đọc lời chúc</span>
+          </label>
+
+          <div class="flex gap-2">
+            <input type="text" id="adminChatInput" placeholder="ví dụ: chúc cả phòng ngủ ngon mơ đẹp nhé..." value="chúc cả phòng ngủ thật ngon và mơ giấc mơ đẹp nhé 🌙" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+            <button onclick="adminSendChat()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-xl transition shadow-md shadow-purple-600/30 whitespace-nowrap">
+              Gửi Chat
+            </button>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5 mt-1">
+            <button onclick="setAdminChat('chúc cả phòng ngủ ngon nhé 🌙')" class="text-[11px] bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-purple-300 font-semibold">chúc cả phòng ngủ ngon</button>
+            <button onclick="setAdminChat('chúc mọi người ngủ ngon mơ thấy người yêu')" class="text-[11px] bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-purple-300 font-semibold">mơ thấy người yêu</button>
+            <button onclick="setAdminChat('khò khò buồn ngủ quá, chúc cả nhà ngủ ngon')" class="text-[11px] bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-purple-300 font-semibold">khò khò</button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1.5 mt-1.5 pt-1.5 border-t border-slate-800/60">
+            <span class="text-[10px] text-slate-400 font-bold mr-1">Icon nhanh:</span>
+            <button onclick="setAdminChat('❤️')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg">❤️</button>
+            <button onclick="setAdminChat('🥰')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg">🥰</button>
+            <button onclick="setAdminChat('💤')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg">💤</button>
+            <button onclick="setAdminChat('🌸')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg">🌸</button>
+            <button onclick="setAdminChat('😴')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg">😴</button>
+            <button onclick="setAdminChat('✨')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg">✨</button>
+            <button onclick="setAdminChat('🛌')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg">🛌</button>
+            <button onclick="setAdminChat('👍')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg">👍</button>
+            <button onclick="setAdminChat('[laugh][heart][thanks]')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg text-pink-300 font-semibold">Icon TikTok [laugh]</button>
+            <button onclick="setAdminChat('[rosieawkward][wow]')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg text-pink-300 font-semibold">[rosieawkward]</button>
+          </div>
+        </div>
+
+        <!-- Dọn Sạch Giường & Reset Giờ Live -->
+        <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2">
+          <button onclick="adminResetTimer()" class="py-2.5 px-3 bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-700/60 text-cyan-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md">
+            <i class="fa-solid fa-clock-rotate-left"></i> Reset Giờ Live (00:00)
+          </button>
+          <button onclick="adminResetBeds()" class="py-2.5 px-3 bg-red-950/60 hover:bg-red-900 border border-red-700/60 text-red-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md">
+            <i class="fa-solid fa-trash-can"></i> Dọn Sạch 20 Giường
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ==========================================
+         CỘT 3 (4/12): GIÁM SÁT TRỰC TIẾP 20 GIƯỜNG
+         ========================================== -->
+    <div class="lg:col-span-4 flex flex-col gap-5">
+      
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+            <i class="fa-solid fa-bed text-cyan-400"></i> GIÁM SÁT 20 GIƯỜNG NGỦ
+          </h2>
+          <span id="adminOccupiedCount" class="text-xs font-black text-cyan-300 bg-cyan-950 px-2 py-0.5 rounded-lg border border-cyan-800">
+            0/20 Có Chủ
+          </span>
+        </div>
+
+        <!-- Lưới mini 20 giường -->
+        <div id="adminBedsMatrix" class="grid grid-cols-4 gap-2 max-h-[500px] overflow-y-auto pr-1">
+          <!-- Render danh sách giường qua JS -->
+        </div>
+
+        <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs font-bold text-slate-300">
+          <span>👑 Trùm Ký Túc Xá:</span>
+          <span id="adminTopVipName" class="text-yellow-400 font-extrabold">Chưa Có VIP</span>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- JAVASCRIPT ADMIN CONTROLLER -->
+  <script>
+    let socket = null;
+    let isTikTokConnected = false;
+    let adminSimInterval = null;
+
+    const MOCK_NAMES = [
+      'Bé Mèo Mơ Màng', 'Gấu Bắc Cực', 'Minh Anh', 'Hoàng Tử Ngủ Gật', 
+      'Thỏ Bảy Màu', 'Vịt Ngáo Ngơ', 'Cáo Tuyết', 'Hạt Dẻ Cười', 'Kem Dâu Tây', 
+      'Bánh Bao Nóng', 'Sóc Nhí Nhảnh', 'Cún Tai Cụp', 'Mây Trắng', 'Tiểu Hổ'
+    ];
+
+    function getRandomUser() {
+      const name = MOCK_NAMES[Math.floor(Math.random() * MOCK_NAMES.length)];
+      return {
+        id: 'u_' + Math.floor(Math.random() * 99999),
+        name: name,
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`
+      };
+    }
+
+    // Bộ phát âm thanh TTS xem trước trên trang Admin
+    let adminTtsPlayer = null;
+    function playAdminTTS(text) {
+      if (!text) return;
+      const isTtsOn = document.getElementById('adminToggleTTS')?.checked;
+      if (!isTtsOn) return;
+
+      if (adminTtsPlayer) {
+        adminTtsPlayer.onended = null;
+        adminTtsPlayer.onerror = null;
+        try { adminTtsPlayer.pause(); adminTtsPlayer.src = ''; } catch (e) {}
+        adminTtsPlayer = null;
+      }
+      try {
+        adminTtsPlayer = new Audio('/api/tts?text=' + encodeURIComponent(text));
+        const p = adminTtsPlayer.play();
+        if (p !== undefined) p.catch(e => console.warn('Admin TTS note:', e?.message));
+      } catch (e) {}
+    }
+
+    // Kết nối Socket.IO
+    function initAdminSocket() {
+      if (typeof io === 'undefined') return;
+      try {
+        socket = io({ transports: ['websocket', 'polling'] });
+
+        socket.on('connect', () => {
+          document.getElementById('serverStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+          document.getElementById('serverStatusText').innerText = 'Server Đã Kết Nối';
+        });
+
+        socket.on('disconnect', () => {
+          document.getElementById('serverStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse';
+          document.getElementById('serverStatusText').innerText = 'Mất Kết Nối Server';
+        });
+
+        socket.on('init_state', data => {
+          if (data && data.beds) renderAdminBeds(data.beds);
+          if (data && data.streamStartTime) {
+            adminStreamStartTime = data.streamStartTime;
+            updateAdminTimer();
+          }
+          if (data && data.config) {
+            if (data.config.welcomeVoiceEnabled !== undefined) {
+              const el = document.getElementById('adminToggleWelcomeVoice');
+              if (el) el.checked = data.config.welcomeVoiceEnabled;
+            }
+            if (data.config.decayEnabled !== undefined) {
+              const el = document.getElementById('adminToggleDecay');
+              if (el) el.checked = data.config.decayEnabled;
+            }
+          }
+          if (data && data.tiktok) {
+            if (data.tiktok.username && data.tiktok.username !== 'undefined') {
+              const input = document.getElementById('adminTikTokInput');
+              if (input && !input.value) input.value = data.tiktok.username;
+            }
+            updateTikTokStatusUI(data.tiktok);
+          }
+        });
+
+        socket.on('timer_reset', data => {
+          adminStreamStartTime = (data && data.streamStartTime) ? data.streamStartTime : Date.now();
+          updateAdminTimer();
+        });
+
+        socket.on('beds_reset', () => {
+          adminStreamStartTime = Date.now();
+          updateAdminTimer();
+        });
+
+        socket.on('beds_update', beds => {
+          renderAdminBeds(beds);
+        });
+
+        let lastAdminWelcomeVoiceTime = 0;
+        socket.on('viewer_join', data => {
+          if (!data) return;
+          const isTtsOn = document.getElementById('adminToggleTTS')?.checked;
+          const isWelcomeOn = document.getElementById('adminToggleWelcomeVoice')?.checked;
+          if (!isTtsOn || !isWelcomeOn) return;
+          const name = data.nickname || data.name || 'Bạn';
+          const now = Date.now();
+          if (now - lastAdminWelcomeVoiceTime < 6000) return;
+          lastAdminWelcomeVoiceTime = now;
+          playAdminTTS(`Chào mừng bạn ${name} đã ghé phòng nhé!`);
+        });
+
+        socket.on('goodnight_trigger', data => {
+          if (!data) return;
+          const isTtsOn = document.getElementById('adminToggleTTS')?.checked;
+          if (!isTtsOn) return;
+          const text = data.ttsText || (data.user ? `Cảm ơn ${data.user.name || data.user.nickname || 'Bạn'} đã chúc cả phòng ngủ ngon nha!` : '');
+          if (text) playAdminTTS(text);
+        });
+
+        socket.on('gift_event', data => {
+          if (!data) return;
+          const isTtsOn = document.getElementById('adminToggleTTS')?.checked;
+          if (!isTtsOn) return;
+          const nickname = data.nickname || 'Bạn';
+          const giftName = data.giftName || 'Hoa Hồng';
+          const count = Number(data.count) || 1;
+          const isRose = giftName.toLowerCase().includes('bông') || giftName.toLowerCase().includes('hoa hồng') || giftName.toLowerCase().includes('rose');
+          const speech = isRose
+            ? (count > 1 ? `Cảm ơn bạn ${nickname} đã tặng ${count} bông hoa hồng ủng hộ ký túc xá nhé!` : `Cảm ơn bạn ${nickname} đã gửi tặng bông hoa hồng xinh xắn nhé! Chúc bạn ngủ thật ngon!`)
+            : `Cảm ơn bạn ${nickname} đã donate ${giftName}! Chúc bạn có một giấc ngủ thật ngon lành nhé!`;
+          playAdminTTS(speech);
+        });
+
+        socket.on('tiktok_status', data => {
+          updateTikTokStatusUI(data);
+        });
+
+      } catch (e) {}
+    }
+
+    function updateTikTokStatusUI(data) {
+      if (!data) return;
+      const btn = document.getElementById('btnAdminConnectTikTok');
+      const badge = document.getElementById('tiktokStatusBadge');
+      if (!btn || !badge) return;
+
+      const safeUsername = (data.username && data.username !== 'undefined' && data.username !== 'null') ? data.username : '';
+
+      if (data.status === 'CONNECTED') {
+        isTikTokConnected = true;
+        btn.className = 'px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs rounded-xl transition shadow-md whitespace-nowrap flex items-center gap-1.5';
+        btn.innerHTML = '<i class="fa-solid fa-unlink"></i> Ngắt Kết Nối';
+        badge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-900/80 text-emerald-300 border border-emerald-500';
+        badge.innerText = `🟢 Đang Live: @${safeUsername || 'Đã Kết Nối'}`;
+      } else if (data.status === 'CONNECTING') {
+        btn.className = 'px-4 py-2 bg-amber-600 text-white font-extrabold text-xs rounded-xl transition shadow-md whitespace-nowrap flex items-center gap-1.5 animate-pulse';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tìm...';
+        badge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-600';
+        badge.innerText = safeUsername ? `🟡 Đang tìm phòng Live @${safeUsername}...` : '🟡 Đang kết nối...';
+      } else if (data.status === 'ERROR') {
+        isTikTokConnected = false;
+        btn.className = 'px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-extrabold text-xs rounded-xl transition shadow-md whitespace-nowrap flex items-center gap-1.5';
+        btn.innerHTML = '<i class="fa-solid fa-link"></i> Thử Lại';
+        badge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-700';
+        badge.innerText = safeUsername ? `🔴 Chưa Bật Live hoặc Sai ID: @${safeUsername}` : '🔴 Lỗi Kết Nối';
+      } else {
+        isTikTokConnected = false;
+        btn.className = 'px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-extrabold text-xs rounded-xl transition shadow-md whitespace-nowrap flex items-center gap-1.5';
+        btn.innerHTML = '<i class="fa-solid fa-link"></i> Kết Nối';
+        badge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+        badge.innerText = 'Chưa Kết Nối';
+      }
+    }
+
+    function isBetterAdminTopSleeper(candidate, currentTop) {
+      if (!currentTop) return true;
+      if (candidate.tier !== currentTop.tier) return candidate.tier > currentTop.tier;
+      if (candidate.coins !== currentTop.coins) return candidate.coins > currentTop.coins;
+      return candidate.points > currentTop.points;
+    }
+
+    // Render danh sách 20 giường mini trong Admin
+    function renderAdminBeds(beds) {
+      const container = document.getElementById('adminBedsMatrix');
+      if (!container || !beds) return;
+
+      let occupied = 0;
+      let topVip = null;
+      let html = '';
+
+      beds.forEach(b => {
+        if (b.user) {
+          occupied++;
+          const uName = (b.user.name && b.user.name !== 'undefined' && b.user.name !== 'null')
+            ? b.user.name
+            : ((b.user.nickname && b.user.nickname !== 'undefined') ? b.user.nickname : 'Khách Xem');
+          const uCoins = Number(b.user.coins) || 0;
+          const uPoints = Number(b.user.points) || 0;
+          const uTier = (uCoins >= 10 || b.level >= 4 || b.user.tier === 3) ? 3 : ((uCoins > 0 || b.level >= 2 || b.user.tier === 2) ? 2 : 1);
+
+          const candidate = { name: uName, tier: uTier, coins: uCoins, points: uPoints };
+          if (isBetterAdminTopSleeper(candidate, topVip)) {
+            topVip = candidate;
+          }
+
+          const badgeLabel = uTier === 3 ? `👑 ${uCoins || 10}XU` : (uTier === 2 ? '⭐ FAN' : 'C1');
+          html += `
+            <div class="p-2 bg-slate-950 border border-purple-500/40 rounded-xl flex flex-col items-center justify-between text-center min-h-[72px]">
+              <span class="text-[9px] font-bold text-slate-400">#${b.id} - ${badgeLabel}</span>
+              <span class="text-[10px] font-extrabold text-white truncate w-full">${uName}</span>
+              <span class="text-[9px] font-mono text-yellow-400 font-black">⭐ ${uPoints}đ</span>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="p-2 bg-slate-950/40 border border-dashed border-slate-800 rounded-xl flex flex-col items-center justify-center text-center min-h-[72px] text-slate-600">
+              <span class="text-[9px] font-bold">#${b.id}</span>
+              <span class="text-[9px]">Trống</span>
+            </div>
+          `;
+        }
+      });
+
+      container.innerHTML = html;
+      document.getElementById('adminOccupiedCount').innerText = `${occupied}/20 Có Chủ`;
+      const topName = (topVip && topVip.name && topVip.name !== 'undefined')
+        ? topVip.name
+        : 'Chưa Có VIP';
+      document.getElementById('adminTopVipName').innerText = topName;
+    }
+
+    // Các hàm tương tác & Test
+    function adminToggleTikTok() {
+      const input = document.getElementById('adminTikTokInput');
+      const val = input ? input.value.trim().replace(/^@/, '') : '';
+      if (!val || val === 'undefined' || val === 'null') {
+        alert('Vui lòng nhập Username TikTok hợp lệ (ví dụ: nguyentranvancanh)!');
+        return;
+      }
+      if (isTikTokConnected) {
+        fetch('/api/tiktok/disconnect', { method: 'POST' });
+      } else {
+        fetch('/api/tiktok/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: val })
+        }).then(r => r.json()).then(d => {
+          if (!d.success) alert('Không thể kết nối tới @' + val + ': ' + (d.error || 'Kênh này hiện không livestream'));
+        }).catch(err => {
+          alert('Lỗi gửi yêu cầu kết nối: ' + err.message);
+        });
+      }
+    }
+
+    function adminSimulateGoodnight() {
+      const user = getRandomUser();
+      const wishes = [
+        'chúc cả phòng ngủ ngon nhé 🌙',
+        'chúc mọi người ngủ ngon mơ đẹp ✨',
+        'chúc cả phòng ngủ thật ngon và mơ giấc mơ đẹp nhé',
+        'khò khò buồn ngủ quá, chúc cả nhà ngủ ngon'
+      ];
+      const comment = wishes[Math.floor(Math.random() * wishes.length)];
+
+      fetch('/api/test/goodnight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: user.name, comment: comment })
+      });
+    }
+
+    function adminTriggerMeteorShower() {
+      if (socket) {
+        socket.emit('admin_trigger_goal');
+      } else {
+        fetch('/api/test/trigger_goal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    const RANDOM_COMMENTS = [
+      'Phòng live ấm áp quá!',
+      'Cho mình xin một chiếc giường ngủ với nha 🛌',
+      'Chào streamer và cả phòng nhé!',
+      'Hôm nay phòng đông vui ghê',
+      'Ký túc xá đẹp quá nè',
+      'Hello mọi người nha 👋',
+      'Được vào giường chưa ta',
+      '❤️❤️❤️',
+      '🥰🌸',
+      '💤💤💤',
+      '🛌✨'
+    ];
+
+    function adminSimulateRandomChat() {
+      const user = getRandomUser();
+      const comment = RANDOM_COMMENTS[Math.floor(Math.random() * RANDOM_COMMENTS.length)];
+      fetch('/api/test/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: user.name, comment })
+      });
+    }
+
+    function adminSimulateJoin() {
+      const user = getRandomUser();
+      fetch('/api/test/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: user.name, avatar: user.avatar })
+      });
+      if (socket) socket.emit('viewer_join', { nickname: user.name, uniqueId: user.id, avatar: user.avatar });
+    }
+
+    function adminSimulateLike() {
+      const user = getRandomUser();
+      fetch('/api/test/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: user.name, comment: 'đã thả tim ủng hộ phòng! ❤️' })
+      });
+      if (socket) socket.emit('like_event', { nickname: user.name, uniqueId: user.id });
+    }
+
+    function adminSimulateShare() {
+      const user = getRandomUser();
+      fetch('/api/test/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: user.name })
+      });
+      if (socket) socket.emit('share_event', { nickname: user.name, uniqueId: user.id });
+    }
+
+    function adminSimulateFollow() {
+      const user = getRandomUser();
+      if (socket) socket.emit('follow_event', { nickname: user.name, uniqueId: user.id });
+    }
+
+    function adminSimulateRose() {
+      const user = getRandomUser();
+      fetch('/api/test/gift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: user.name, giftName: 'Bông Hoa Hồng 🌹', count: 1, diamonds: 1 })
+      });
+    }
+
+    function adminSimulateRoseCombo() {
+      const user = getRandomUser();
+      fetch('/api/test/gift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: user.name, giftName: 'Combo 10 Bông Hoa Hồng 💐', count: 10, diamonds: 1 })
+      });
+    }
+
+    function adminSimulateGift() {
+      const user = getRandomUser();
+      fetch('/api/test/gift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: user.name, giftName: 'Quà VIP Hoàng Gia 👑', count: 1, diamonds: 50 })
+      });
+    }
+
+    function adminSendChat() {
+      const input = document.getElementById('adminChatInput');
+      if (!input || !input.value.trim()) return;
+      const comment = input.value.trim();
+      const user = getRandomUser();
+
+      fetch('/api/test/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: user.name, comment })
+      });
+      input.value = '';
+    }
+
+    function setAdminChat(txt) {
+      const input = document.getElementById('adminChatInput');
+      if (input) { input.value = txt; input.focus(); }
+    }
+
+    document.getElementById('adminChatInput')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') adminSendChat();
+    });
+
+    let adminStreamStartTime = Date.now();
+    function updateAdminTimer() {
+      const elapsedMs = Math.max(0, Date.now() - adminStreamStartTime);
+      const totalSec = Math.floor(elapsedMs / 1000);
+      const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+      const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+      const s = String(totalSec % 60).padStart(2, '0');
+      const el = document.getElementById('adminLiveTimer');
+      if (el) el.innerText = `${h}:${m}:${s}`;
+    }
+    setInterval(updateAdminTimer, 1000);
+    updateAdminTimer();
+
+    function adminResetTimer() {
+      fetch('/api/timer/reset', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          adminStreamStartTime = (data && data.streamStartTime) ? data.streamStartTime : Date.now();
+          updateAdminTimer();
+        });
+    }
+
+    function adminResetBeds() {
+      if (confirm('Bạn có chắc chắn muốn dọn sạch toàn bộ 20 giường và reset giờ live không?')) {
+        fetch('/api/bed/reset', { method: 'POST' })
+          .then(r => r.json())
+          .then(data => {
+            adminStreamStartTime = (data && data.streamStartTime) ? data.streamStartTime : Date.now();
+            updateAdminTimer();
+          });
+      }
+    }
+
+    function adminTestVoice() {
+      const warmText = "Cảm ơn bạn Bé Mèo thật nhiều nhé. Lời chúc cả phòng ngủ thật ngon và mơ giấc mơ ngọt ngào ấm áp quá. Chúc cả ký túc xá ngủ say nha!";
+      const audio = new Audio('/api/tts?text=' + encodeURIComponent(warmText));
+      audio.play().catch(e => console.warn('Lỗi phát âm thanh:', e));
+    }
+
+    function updateSettings() {
+      const bgm = document.getElementById('adminToggleBGM')?.checked;
+      const audio = document.getElementById('adminToggleAudio')?.checked;
+      const tts = document.getElementById('adminToggleTTS')?.checked;
+      const welcomeVoice = document.getElementById('adminToggleWelcomeVoice')?.checked;
+      const decay = document.getElementById('adminToggleDecay')?.checked;
+      if (socket) {
+        socket.emit('client_update_config', {
+          bgmEnabled: bgm,
+          windChimeEnabled: audio,
+          ttsEnabled: tts,
+          welcomeVoiceEnabled: welcomeVoice,
+          decayEnabled: decay
+        });
+      }
+    }
+
+    function changeAdminBgmVolume(val) {
+      if (socket) {
+        socket.emit('client_update_config', {
+          bgmVolume: parseInt(val)
+        });
+      }
+    }
+
+    function toggleAdminSim() {
+      const isEnabled = document.getElementById('adminToggleSim')?.checked;
+      if (adminSimInterval) { clearInterval(adminSimInterval); adminSimInterval = null; }
+      if (isEnabled) {
+        adminSimInterval = setInterval(() => {
+          const r = Math.random();
+          if (r < 0.30) adminSimulateGoodnight();
+          else if (r < 0.55) adminSimulateLike();
+          else if (r < 0.70) adminSimulateShare();
+          else if (r < 0.85) adminSimulateFollow();
+          else adminSimulateGift();
+        }, 2500);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initAdminSocket();
+      toggleAdminSim();
+    });
+  </script>
+</body>
+</html>

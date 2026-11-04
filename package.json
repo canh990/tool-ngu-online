@@ -1,0 +1,27 @@
+{
+  "name": "tool-ngu-online",
+  "version": "1.0.0",
+  "description": "Ký Túc Xá 20 Giường Ngủ - TikTok LIVE Interactive Game & Stream Overlay",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "tiktok-live",
+    "ky-tuc-xa",
+    "giuong-ngu",
+    "dormitory",
+    "stream-overlay",
+    "socket.io"
+  ],
+  "author": "Antigravity Developer",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "tiktok-live-connector": "^2.5.0"
+  }
+}
+
